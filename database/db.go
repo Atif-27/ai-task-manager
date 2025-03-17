@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"os"
-	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -13,24 +12,29 @@ import (
 var DB *mongo.Client
 
 func ConnectDB() {
-	clientOptions := options.Client().ApplyURI(os.Getenv("MONGO_URI"))
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, clientOptions)
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		log.Fatal("ENV ERROR: MONGO_URI not set")
+	}
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatal("ENV ERROR: PORT is not set")
+	}
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(os.Getenv("MONGO_URI")))
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatal("Could not connect to MongoDB")
-	}
-
 	log.Println("Connected to MongoDB")
 	DB = client
 }
 
 func GetCollection(collectionName string) *mongo.Collection {
+	if DB == nil {
+		log.Fatal("MongoDB client is not initialized. Call ConnectDB() first.")
+	}
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		log.Fatal("DB_NAME environment variable is not set")
+	}
 	return DB.Database(os.Getenv("DB_NAME")).Collection(collectionName)
 }
