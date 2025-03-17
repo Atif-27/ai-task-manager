@@ -20,6 +20,7 @@ func main() {
 	)
 	apiV1 := app.Group("/api/v1")
 	apiV1.Post("/register", userHandler.Register)
+	apiV1.Post("/login", userHandler.Login)
 	port := os.Getenv("PORT")
 	log.Fatal(app.Listen(":" + port))
 }
