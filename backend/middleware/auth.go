@@ -9,11 +9,10 @@ import (
 
 func AuthMiddleware(c *fiber.Ctx) error {
 	tokenStr := c.Get("Authorization")
-
 	if tokenStr == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
-
+	
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("JWT_SECRET")), nil
 	})

@@ -40,16 +40,21 @@ func (u *UserHandler) Login(c *fiber.Ctx) error {
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
 	}
+
 	var user models.User
 	err := u.userCollection.FindOne(c.Context(), bson.M{"email": input.Email}).Decode(&user)
+
 	if err == mongo.ErrNoDocuments {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
 	}
+
+
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password))
+
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
 	}
 	// TODO: Implement cookie based
-	token, _ := utils.GenerateToken(user.Email)
+	token, _ := utils.GenerateToken(user.ID.Hex(),user.Email)
 	return c.JSON(fiber.Map{"token": token})
 }
