@@ -9,11 +9,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func GenerateToken(user_id string,email string) (string, error) {
+func GenerateToken(user_id string, email string) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": user_id,
-		"email": email,
-		"exp":   time.Now().Add(time.Hour * 72).Unix(),
+		"email":   email,
+		"exp":     time.Now().Add(time.Hour * 72).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))

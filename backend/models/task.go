@@ -25,15 +25,15 @@ type StatusType string
 type PriorityType string
 
 const (
-	PENDING StatusType = "pending"
+	PENDING    StatusType = "pending"
 	INPROGRESS StatusType = "in_progress"
-	COMPLETED StatusType = "completed"
+	COMPLETED  StatusType = "completed"
 )
 
 const (
-	LOW PriorityType = "low"
+	LOW    PriorityType = "low"
 	MEDIUM PriorityType = "medium"
-	HIGH PriorityType = "high"
+	HIGH   PriorityType = "high"
 )
 
 func (s StatusType) ValidateStatus() bool {
@@ -55,9 +55,9 @@ func (p PriorityType) ValidatePriority() bool {
 }
 
 type UpdateTaskRequest struct {
-	Title       *string              `json:"title,omitempty"`
-	Description *string              `json:"description,omitempty"`
-	Status      *StatusType   `json:"status,omitempty"`
-	Priority    *PriorityType `json:"priority,omitempty"`
+	Title       *string               `json:"title,omitempty"`
+	Description *string               `json:"description,omitempty"`
+	Status      *StatusType           `json:"status,omitempty"`
+	Priority    *PriorityType         `json:"priority,omitempty"`
 	AssignedTo  *[]primitive.ObjectID `json:"assigned_to,omitempty"`
 }

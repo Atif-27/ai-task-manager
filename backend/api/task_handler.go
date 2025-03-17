@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
 type TaskHandler struct {
 	taskCollection *mongo.Collection
 }
@@ -22,7 +23,7 @@ func MakeTaskHandler() *TaskHandler {
 	}
 }
 
-func(t *TaskHandler) CreateTask(c *fiber.Ctx) error {
+func (t *TaskHandler) CreateTask(c *fiber.Ctx) error {
 	var task models.Task
 	if err := c.BodyParser(&task); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
@@ -33,10 +34,10 @@ func(t *TaskHandler) CreateTask(c *fiber.Ctx) error {
 	if task.Priority == "" {
 		task.Priority = models.LOW
 	}
-	if task.AssignedTo == nil{
+	if task.AssignedTo == nil {
 		task.AssignedTo = []primitive.ObjectID{}
 	}
-	if !task.Status.ValidateStatus()  || !task.Priority.ValidatePriority(){
+	if !task.Status.ValidateStatus() || !task.Priority.ValidatePriority() {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid Status or priority"})
 	}
 	task.CreatedAt = time.Now()
@@ -48,7 +49,6 @@ func(t *TaskHandler) CreateTask(c *fiber.Ctx) error {
 	ws.WSManager.Broadcast(fiber.Map{"event": "task_created", "task": task})
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "Task created", "task": task})
 }
-
 
 func (t *TaskHandler) UpdateTask(c *fiber.Ctx) error {
 	id := c.Params("id")
@@ -100,7 +100,6 @@ func (t *TaskHandler) UpdateTask(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "Task updated", "updated_fields": updatedTask})
 }
 
-
 func (t *TaskHandler) DeleteTask(c *fiber.Ctx) error {
 	id := c.Params("id")
 
@@ -122,4 +121,39 @@ func (t *TaskHandler) DeleteTask(c *fiber.Ctx) error {
 	go ws.WSManager.Broadcast(fiber.Map{"event": "task_deleted", "task_id": id})
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Task deleted", "task_id": id})
+}
+
+func (t *TaskHandler) GetAllTasks(c *fiber.Ctx) error {
+	var tasks []models.Task
+	cursor, err := t.taskCollection.Find(c.Context(), bson.M{})
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not fetch tasks"})
+	}
+
+	if err := cursor.All(c.Context(), &tasks); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to parse tasks"})
+	}
+
+	return c.JSON(fiber.Map{"tasks": tasks})
+}
+
+func (t *TaskHandler) GetUserTasks(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(primitive.ObjectID)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	var tasks []models.Task
+	filter := bson.M{"assigned_to": userID}
+	cursor, err := t.taskCollection.Find(c.Context(), filter)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not fetch assigned tasks"})
+	}
+	if err := cursor.All(c.Context(), &tasks); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to parse assigned tasks"})
+	}
+
+	return c.JSON(fiber.Map{"tasks": tasks})
 }

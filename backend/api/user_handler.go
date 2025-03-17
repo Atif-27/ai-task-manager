@@ -48,13 +48,12 @@ func (u *UserHandler) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
 	}
 
-
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password))
 
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
 	}
 	// TODO: Implement cookie based
-	token, _ := utils.GenerateToken(user.ID.Hex(),user.Email)
+	token, _ := utils.GenerateToken(user.ID.Hex(), user.Email)
 	return c.JSON(fiber.Map{"token": token})
 }

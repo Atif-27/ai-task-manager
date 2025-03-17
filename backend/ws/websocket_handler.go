@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 )
 
 func HandleWebSocketConnection(c *websocket.Conn) {
+	fmt.Println("Connection")
 	authHeader := c.Headers("Authorization")
 	if authHeader == "" {
 		log.Println("No Authorization header provided")

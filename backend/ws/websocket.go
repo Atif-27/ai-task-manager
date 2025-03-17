@@ -18,6 +18,7 @@ type WebSocketManager struct {
 	clients map[primitive.ObjectID][]*Client
 	mutex   sync.Mutex
 }
+
 var WSManager = WebSocketManager{
 	clients: make(map[primitive.ObjectID][]*Client),
 }
@@ -47,7 +48,7 @@ func (w *WebSocketManager) RemoveClient(conn *websocket.Conn, userID primitive.O
 }
 
 func (w *WebSocketManager) Broadcast(message interface{}) {
-	go func() { 
+	go func() {
 		w.mutex.Lock()
 		defer w.mutex.Unlock()
 
