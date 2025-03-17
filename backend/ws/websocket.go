@@ -1,6 +1,8 @@
 package ws
 
 import (
+	"encoding/json"
+	"log"
 	"sync"
 
 	"github.com/gofiber/websocket/v2"
@@ -42,4 +44,29 @@ func (w *WebSocketManager) RemoveClient(conn *websocket.Conn, userID primitive.O
 	if len(w.clients[userID]) == 0 {
 		delete(w.clients, userID)
 	}
+}
+
+func (w *WebSocketManager) Broadcast(message interface{}) {
+	go func() { 
+		w.mutex.Lock()
+		defer w.mutex.Unlock()
+
+		data, err := json.Marshal(message)
+		if err != nil {
+			log.Println("Failed to encode message:", err)
+			return
+		}
+
+		for _, connections := range w.clients {
+			for _, client := range connections {
+				go func(c *Client) { // Send message in a Goroutine
+					if err := c.Conn.WriteMessage(websocket.TextMessage, data); err != nil {
+						log.Println("WebSocket error:", err)
+						c.Conn.Close()
+						w.RemoveClient(c.Conn, c.UserID)
+					}
+				}(client)
+			}
+		}
+	}()
 }

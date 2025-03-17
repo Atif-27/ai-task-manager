@@ -5,6 +5,7 @@ import (
 
 	"github.com/Atif-27/ai-task-manager/database"
 	"github.com/Atif-27/ai-task-manager/models"
+	"github.com/Atif-27/ai-task-manager/ws"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -43,5 +44,6 @@ func(t *TaskHandler) CreateTask(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create task"})
 	}
+	ws.WSManager.Broadcast(fiber.Map{"event": "task_created", "task": task})
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "Task created", "task": task})
 }
