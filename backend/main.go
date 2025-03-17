@@ -17,10 +17,12 @@ func main() {
 		app = fiber.New()
 		//Handlers
 		userHandler = api.MakeUserHandler()
+		taskHandler = api.MakeTaskHandler()
 	)
 	apiV1 := app.Group("/api/v1")
 	apiV1.Post("/register", userHandler.Register)
 	apiV1.Post("/login", userHandler.Login)
 	port := os.Getenv("PORT")
+	apiV1.Post("/tasks", taskHandler.CreateTask)
 	log.Fatal(app.Listen(":" + port))
 }

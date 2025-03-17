@@ -14,14 +14,14 @@ type UserHandler struct {
 	userCollection *mongo.Collection
 }
 
-//Constructor function for UserHandler
-func MakeUserHandler() *UserHandler{
+// Constructor function for UserHandler
+func MakeUserHandler() *UserHandler {
 	return &UserHandler{
 		userCollection: database.GetCollection("user"),
 	}
 }
 
-func(u *UserHandler) Register(c *fiber.Ctx) error {
+func (u *UserHandler) Register(c *fiber.Ctx) error {
 	var user models.User
 	if err := c.BodyParser(&user); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
@@ -35,8 +35,7 @@ func(u *UserHandler) Register(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "User registered successfully"})
 }
 
-
-func(u *UserHandler)  Login(c *fiber.Ctx) error {
+func (u *UserHandler) Login(c *fiber.Ctx) error {
 	var input models.User
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
