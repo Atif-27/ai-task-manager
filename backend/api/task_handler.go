@@ -7,6 +7,7 @@ import (
 	"github.com/Atif-27/ai-task-manager/models"
 	"github.com/Atif-27/ai-task-manager/ws"
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -46,4 +47,79 @@ func(t *TaskHandler) CreateTask(c *fiber.Ctx) error {
 	}
 	ws.WSManager.Broadcast(fiber.Map{"event": "task_created", "task": task})
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "Task created", "task": task})
+}
+
+
+func (t *TaskHandler) UpdateTask(c *fiber.Ctx) error {
+	id := c.Params("id")
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid Task ID"})
+	}
+	var updateData models.UpdateTaskRequest
+	if err := c.BodyParser(&updateData); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request format"})
+	}
+
+	updateFields := bson.M{}
+	if updateData.Title != nil {
+		updateFields["title"] = *updateData.Title
+	}
+	if updateData.Description != nil {
+		updateFields["description"] = *updateData.Description
+	}
+	if updateData.Status != nil && updateData.Status.ValidateStatus() {
+		updateFields["status"] = *updateData.Status
+	}
+	if updateData.Priority != nil && updateData.Priority.ValidatePriority() {
+		updateFields["priority"] = *updateData.Priority
+	}
+	if updateData.AssignedTo != nil {
+		updateFields["assigned_to"] = *updateData.AssignedTo
+	}
+
+	if len(updateFields) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No valid fields to update"})
+	}
+
+	updateFields["updated_at"] = time.Now()
+	filter := bson.M{"_id": objID}
+	update := bson.M{"$set": updateFields}
+	_, err = t.taskCollection.UpdateOne(c.Context(), filter, update)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not update task"})
+	}
+
+	var updatedTask models.Task
+	err = t.taskCollection.FindOne(c.Context(), bson.M{"_id": objID}).Decode(&updatedTask)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not fetch updated task"})
+	}
+
+	ws.WSManager.Broadcast(fiber.Map{"event": "task_updated", "task_id": id, "updates": updatedTask})
+	return c.JSON(fiber.Map{"message": "Task updated", "updated_fields": updatedTask})
+}
+
+
+func (t *TaskHandler) DeleteTask(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid Task ID"})
+	}
+
+	filter := bson.M{"_id": oid}
+	result, err := t.taskCollection.DeleteOne(c.Context(), filter)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not delete task"})
+	}
+
+	if result.DeletedCount == 0 {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Task not found"})
+	}
+
+	go ws.WSManager.Broadcast(fiber.Map{"event": "task_deleted", "task_id": id})
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Task deleted", "task_id": id})
 }

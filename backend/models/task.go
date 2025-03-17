@@ -54,3 +54,10 @@ func (p PriorityType) ValidatePriority() bool {
 	}
 }
 
+type UpdateTaskRequest struct {
+	Title       *string              `json:"title,omitempty"`
+	Description *string              `json:"description,omitempty"`
+	Status      *StatusType   `json:"status,omitempty"`
+	Priority    *PriorityType `json:"priority,omitempty"`
+	AssignedTo  *[]primitive.ObjectID `json:"assigned_to,omitempty"`
+}
