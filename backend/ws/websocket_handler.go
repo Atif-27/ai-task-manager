@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -39,6 +40,7 @@ func HandleWebSocketConnection(c *websocket.Conn) {
 		msg []byte
 		messageObj WebSocketMessage
 	)
+	ctx := context.Background()
 	for {
 		if _, msg, err = c.ReadMessage(); err != nil {
 			log.Println("read error:", err)
@@ -50,7 +52,7 @@ func HandleWebSocketConnection(c *websocket.Conn) {
 			sendErrorMessage(c, "Invalid message format")
 			continue
 		}
-		AutomationWebSocketHandler(c,messageObj,userID)
+		AutomationWebSocketHandler(c,ctx,messageObj,userID)
 	}
 }
 

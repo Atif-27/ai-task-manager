@@ -15,6 +15,7 @@ import (
 // UserSession holds a user's chat session and related metadata
 type UserSession struct {
 	Session   *genai.ChatSession
+	Model     *genai.GenerativeModel  // Store the model instance with the session
 	LastUsed  time.Time
 	UserID    string
 }
@@ -96,7 +97,7 @@ func (sm *SessionManager) createNewModel() *genai.GenerativeModel {
 }
 
 // GetOrCreateSession retrieves an existing session or creates a new one
-func (sm *SessionManager) GetOrCreateSession(userID string) *genai.ChatSession {
+func (sm *SessionManager) GetOrCreateSession(userID string) *UserSession {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 
@@ -106,16 +107,17 @@ func (sm *SessionManager) GetOrCreateSession(userID string) *genai.ChatSession {
 		model := sm.createNewModel()
 		newSession := &UserSession{
 			Session:  model.StartChat(),
+			Model:    model,  // Store the model instance with the session
 			LastUsed: time.Now(),
 			UserID:   userID,
 		}
 		sm.sessions[userID] = newSession
-		return newSession.Session
+		return newSession
 	}
 
 	// Update last used time
 	session.LastUsed = time.Now()
-	return session.Session
+	return session
 }
 
 // UpdateSessionTimestamp updates the last used timestamp for a session
@@ -173,10 +175,16 @@ func ProcessConversation(ctx context.Context, userMessage string, userID string)
 	}
 
 	// Get or create a chat session for this user
-	session := sm.GetOrCreateSession(userID)
+	userSession := sm.GetOrCreateSession(userID)
+	
+	// Use a mutex to ensure that each user's conversation is processed sequentially
+	// This prevents race conditions between multiple messages from the same user
+	sessionMutex := &sync.Mutex{}
+	sessionMutex.Lock()
+	defer sessionMutex.Unlock()
 
 	// Send the message in the context of the ongoing conversation
-	res, err := session.SendMessage(ctx, genai.Text(userMessage))
+	res, err := userSession.Session.SendMessage(ctx, genai.Text(userMessage))
 	if err != nil {
 		return "", fmt.Errorf("session.SendMessage: %v", err)
 	}
@@ -202,7 +210,7 @@ func ProcessConversation(ctx context.Context, userMessage string, userID string)
 				}
 
 				// Send function response back to model
-				fnResponse, err := session.SendMessage(ctx, genai.FunctionResponse{
+				fnResponse, err := userSession.Session.SendMessage(ctx, genai.FunctionResponse{
 					Name: funcall.Name,
 					Response: map[string]any{
 						"success": true,
@@ -264,6 +272,3 @@ func CreateTask(title, description, priority string) (*Task, error) {
 	
 	return task, nil
 }
-
-
-
