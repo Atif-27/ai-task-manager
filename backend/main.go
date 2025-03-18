@@ -9,6 +9,7 @@ import (
 	"github.com/Atif-27/ai-task-manager/middleware"
 	"github.com/Atif-27/ai-task-manager/ws"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
 )
@@ -23,6 +24,12 @@ func main() {
 		userHandler = api.MakeUserHandler()
 		taskHandler = api.MakeTaskHandler()
 	)
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:3000/",
+		AllowHeaders: "Origin, Content-Type, Accept",
+	}))
+
+
 	apiV1 := app.Group("/api/v1")
 	apiV1.Post("/register", userHandler.Register)
 	apiV1.Post("/login", userHandler.Login)
