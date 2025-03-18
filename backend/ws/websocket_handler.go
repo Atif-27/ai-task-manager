@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -8,7 +9,10 @@ import (
 	utils "github.com/Atif-27/ai-task-manager/utilits"
 	"github.com/gofiber/websocket/v2"
 )
-
+type WebSocketMessage struct {
+	Type    string      `json:"type"`
+	Payload interface{} `json:"payload"`
+}
 func HandleWebSocketConnection(c *websocket.Conn) {
 	fmt.Println("Connection")
 	authHeader := c.Headers("Authorization")
@@ -33,12 +37,29 @@ func HandleWebSocketConnection(c *websocket.Conn) {
 	}()
 	var (
 		msg []byte
+		messageObj WebSocketMessage
 	)
 	for {
-		if _, msg, _ = c.ReadMessage(); err != nil {
-			log.Println("read:", err)
+		if _, msg, err = c.ReadMessage(); err != nil {
+			log.Println("read error:", err)
 			break
 		}
-		log.Printf("recv: %s", msg)
+		log.Printf("received message: %s", msg)
+		if err := json.Unmarshal(msg, &messageObj); err != nil {
+			log.Printf("Failed to parse message: %v", err)
+			// sendErrorMessage(c, "Invalid message format")
+			continue
+		}
+		switch messageObj.Type {
+		case "message":
+			response, err := json.Marshal(map[string]string{"msg": "hello"})
+			if err != nil {
+				log.Printf("Failed to marshal response: %v", err)
+				continue
+			}
+			c.WriteMessage(websocket.TextMessage, response)
+		default:
+			return
+		}
 	}
 }
