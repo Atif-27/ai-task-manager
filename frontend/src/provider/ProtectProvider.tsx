@@ -5,18 +5,16 @@ import React, { useEffect, useState } from 'react'
 
 const ProtectProvider = ({children}:{children:React.ReactNode}) => {
     const {auth}= useAuthStore()
-    const router = useRouter()
-    console.log(auth);
+    const router = useRouter();
 
     const [hasAccess, setHasAccess] = useState(false);
     useEffect(() => {
         const checkAuth = async () => {
-            console.log(auth);
-            if (!auth.isLoggedIn) {
-                router.push('/login');
-            } else {
-                setHasAccess(true);
-            }
+          if (!auth.isLoggedIn) {
+            router.push("/login");
+          } else {
+            setHasAccess(true);
+          }
         };
         checkAuth();
     }, [auth, router])
