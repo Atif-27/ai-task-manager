@@ -17,13 +17,13 @@ type WebSocketMessage struct {
 func HandleWebSocketConnection(c *websocket.Conn) {
 	fmt.Println("Connection")
 	authHeader := c.Headers("Authorization")
-	if authHeader == "" {
-		log.Println("No Authorization header provided")
-		c.Close()
-		return
+	var tokenStr string
+	if authHeader != "" {
+		tokenStr = strings.TrimPrefix(authHeader, "Bearer ")
 	}
-
-	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+	if tokenStr ==""{
+		tokenStr = c.Query("token")
+	}
 	userID, err := utils.ExtractUserID(tokenStr)
 	if err != nil {
 		log.Println("Invalid JWT token")
