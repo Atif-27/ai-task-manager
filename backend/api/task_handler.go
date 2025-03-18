@@ -44,6 +44,7 @@ func (t *TaskHandler) CreateTask(c *fiber.Ctx) error {
 	task.CreatedAt = time.Now()
 	task.UpdatedAt = time.Now()
 	task.AssignedBy = userId
+	task.ID = primitive.NewObjectID()
 	_, err := t.taskCollection.InsertOne(c.Context(), task)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create task"})
