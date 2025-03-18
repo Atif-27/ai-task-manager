@@ -47,19 +47,33 @@ func HandleWebSocketConnection(c *websocket.Conn) {
 		log.Printf("received message: %s", msg)
 		if err := json.Unmarshal(msg, &messageObj); err != nil {
 			log.Printf("Failed to parse message: %v", err)
-			// sendErrorMessage(c, "Invalid message format")
+			sendErrorMessage(c, "Invalid message format")
 			continue
 		}
-		switch messageObj.Type {
-		case "message":
-			response, err := json.Marshal(map[string]string{"msg": "hello"})
-			if err != nil {
-				log.Printf("Failed to marshal response: %v", err)
-				continue
-			}
-			c.WriteMessage(websocket.TextMessage, response)
-		default:
-			return
-		}
+		AutomationWebSocketHandler(c,messageObj,userID)
 	}
+}
+
+
+// sendMessage sends a WebSocketMessage to the client
+func sendMessage(c *websocket.Conn, msg WebSocketMessage) {
+	data, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error marshalling message: %v", err)
+		return
+	}
+	
+	if err := c.WriteMessage(websocket.TextMessage, data); err != nil {
+		log.Printf("Error sending message: %v", err)
+	}
+}
+
+// sendErrorMessage sends an error response
+func sendErrorMessage(c *websocket.Conn, errorMsg string) {
+	sendMessage(c, WebSocketMessage{
+		Type: MessageTypeError,
+		Payload: ErrorResponse{
+			Message: errorMsg,
+		},
+	})
 }

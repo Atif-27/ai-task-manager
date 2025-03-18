@@ -16,6 +16,7 @@ import (
 func main() {
 	_ = godotenv.Load()
 	database.ConnectDB()
+	
 	var (
 		app = fiber.New()
 		//Handlers
@@ -25,13 +26,14 @@ func main() {
 	apiV1 := app.Group("/api/v1")
 	apiV1.Post("/register", userHandler.Register)
 	apiV1.Post("/login", userHandler.Login)
-	apiV1.Post("/tasks",middleware.AuthMiddleware, taskHandler.CreateTask)
-	apiV1.Delete("/tasks/:id",middleware.AuthMiddleware, taskHandler.DeleteTask)
-	apiV1.Put("/tasks/:id",middleware.AuthMiddleware, taskHandler.UpdateTask)
-	apiV1.Get("/tasks",middleware.AuthMiddleware, taskHandler.GetAllTasks)                                
-	apiV1.Get("/tasks/me", middleware.AuthMiddleware, taskHandler.GetUserTasks) 
+	apiV1.Post("/tasks", middleware.AuthMiddleware, taskHandler.CreateTask)
+	apiV1.Delete("/tasks/:id", middleware.AuthMiddleware, taskHandler.DeleteTask)
+	apiV1.Put("/tasks/:id", middleware.AuthMiddleware, taskHandler.UpdateTask)
+	apiV1.Get("/tasks", middleware.AuthMiddleware, taskHandler.GetAllTasks)
+	apiV1.Get("/tasks/me", middleware.AuthMiddleware, taskHandler.GetUserTasks)
 
 	apiV1.Get("/ws", websocket.New(ws.HandleWebSocketConnection))
 	port := os.Getenv("PORT")
 	log.Fatal(app.Listen(":" + port))
 }
+

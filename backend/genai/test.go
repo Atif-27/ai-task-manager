@@ -11,7 +11,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-func Test() {
+func ProcessConversation(userMessage string) (string, error) {
 	ctx := context.Background()
 	client, err := genai.NewClient(ctx, option.WithAPIKey(os.Getenv("API_KEY")))
 	if err != nil {
@@ -23,18 +23,9 @@ func Test() {
 	schema := &genai.Schema{
 		Type: genai.TypeObject,
 		Properties: map[string]*genai.Schema{
-			"title": {
-				Type:        genai.TypeString,
-				Description: "The title of the task",
-			},
-			"description": {
-				Type:        genai.TypeString,
-				Description: "A detailed description of the task",
-			},
-			"priority": {
-				Type:        genai.TypeString,
-				Description: "Priority level: low, medium, or high",
-			},
+			"title":       {Type: genai.TypeString, Description: "The title of the task"},
+			"description": {Type: genai.TypeString, Description: "A detailed description of the task"},
+			"priority":    {Type: genai.TypeString, Description: "Priority level: low, medium, or high"},
 		},
 		Required: []string{"title", "description", "priority"},
 	}
@@ -49,20 +40,77 @@ func Test() {
 
 	model := client.GenerativeModel("gemini-1.5-pro-latest")
 	model.Tools = []*genai.Tool{taskTool}
-	
-	// Set system prompt to guide model behavior
 	model.SystemInstruction = &genai.Content{
 		Parts: []genai.Part{
-			genai.Text("You are a task management assistant. Before calling the create_task function, ensure all required fields (title, description, priority) are provided. If a field is clearly stated in the user query, extract it directly. If a field can be deduced with at least 50% certainty, extract it. Only ask the user for missing fields when they cannot be reasonably inferred from the query"),
+			genai.Text(`You are a task management assistant. Before calling the create_task function, ensure all required fields (title, description, priority) are provided.
+				If a field is explicitly stated in the user query, extract it directly. If a field can be reasonably inferred with at least 90% certainty, extract it. Only ask the user for missing fields when they cannot be reasonably deduced.The replies of the user will be relevant to the previous question asked by the model. Avoid looping back to previously asked questions. You have the freedom to generate the description and priority based on users first input if the users seems in hurry
+				If the user does not specify a priority, default to "medium". Once all necessary fields are obtained, call the function without additional questioning.
+			`),
 		},
 	}
 
-	// Start a chat session
 	session := model.StartChat()
+	res, err := session.SendMessage(ctx, genai.Text(userMessage))
+	if err != nil {
+		return "", fmt.Errorf("session.SendMessage: %v", err)
+	}
 
-	// Process a user message
-	ProcessUserMessage(ctx, session, "Create a task to dockerize next.js app high priority, and generate a description accordinly", taskTool.FunctionDeclarations[0].Name)
+	var aiResponse string
+
+	// Process all response parts
+	for _, cand := range res.Candidates {
+		for _, part := range cand.Content.Parts {
+			if funcall, ok := part.(genai.FunctionCall); ok {
+				// Extract task details
+				title, _ := funcall.Args["title"].(string)
+				description, _ := funcall.Args["description"].(string)
+				priority, _ := funcall.Args["priority"].(string)
+
+				// Create the task
+				task, err := CreateTask(title, description, priority)
+				if err != nil {
+					return aiResponse, fmt.Errorf("failed to create task: %v", err)
+				}
+
+				// Send function response back to model
+				fnResponse, err := session.SendMessage(ctx, genai.FunctionResponse{
+					Name: funcall.Name,
+					Response: map[string]any{
+						"success": true,
+						"taskId":  task.ID,
+						"message": "Task created successfully",
+					},
+				})
+				if err != nil {
+					log.Println("Error sending function response:", err)
+					return aiResponse, nil
+				}
+
+				// Capture the final AI response after function execution
+				for _, fnCand := range fnResponse.Candidates {
+					for _, fnPart := range fnCand.Content.Parts {
+						if textPart, isText := fnPart.(genai.Text); isText {
+							fmt.Println("Final Response:", textPart)
+							aiResponse += string(textPart) + "\n" // Append response
+						}
+					}
+				}
+			} else if textPart, isText := part.(genai.Text); isText {
+				// Append text response before function call
+				fmt.Println("Text response before function call:", textPart)
+				aiResponse += string(textPart) + "\n" // Append text response
+			}
+		}
+	}
+
+	// Trim any trailing newline
+	aiResponse = string(aiResponse)
+	return aiResponse, nil
 }
+
+
+
+
 
 // Task represents a task in our system
 type Task struct {
@@ -90,70 +138,4 @@ func CreateTask(title, description, priority string) (*Task, error) {
 	fmt.Printf("Created task: %+v\n", task)
 	
 	return task, nil
-}
-
-func ProcessUserMessage(ctx context.Context, session *genai.ChatSession, userMessage string, functionName string) {
-	fmt.Printf("Received message: %s\n\n", userMessage)
-	
-	// Send the user message to the model
-	res, err := session.SendMessage(ctx, genai.Text(userMessage))
-	if err != nil {
-		log.Fatalf("session.SendMessage: %v", err)
-	}
-	
-	// Process the response
-	HandleModelResponse(ctx, session, res, functionName)
-}
-
-func HandleModelResponse(ctx context.Context, session *genai.ChatSession, res *genai.GenerateContentResponse, functionName string) {
-	for _, cand := range res.Candidates {
-		for _, part := range cand.Content.Parts {
-			funcall, ok := part.(genai.FunctionCall)
-			if !ok {
-				// This is a regular text response
-				fmt.Println("AI Response:", part)
-				continue
-			}
-
-			// Handle function calls
-			switch funcall.Name {
-			case "create_task":
-				fmt.Println("Function call detected: create_task")
-				
-				// Extract arguments
-				title, _ := funcall.Args["title"].(string)
-				description, _ := funcall.Args["description"].(string)
-				priority, _ := funcall.Args["priority"].(string)
-				
-				// Create the task
-				task, err := CreateTask(title, description, priority)
-				if err != nil {
-					log.Fatalf("Failed to create task: %v", err)
-				}
-				
-				// Send function response back to the model
-				fnResponse, err := session.SendMessage(ctx, genai.FunctionResponse{
-					Name: functionName,
-					Response: map[string]any{
-						"success": true,
-						"taskId":  task.ID,
-						"message": "Task created successfully",
-					},
-				})
-				if err != nil {
-					log.Fatal(err)
-				}
-				
-				// Process the final model response
-				for _, fnCand := range fnResponse.Candidates {
-					for _, fnPart := range fnCand.Content.Parts {
-						fmt.Println("AI Final Response:", fnPart)
-					}
-				}
-				
-			default:
-				fmt.Printf("Unknown function call: %s\n", funcall.Name)
-			}
-		}
-	}
 }
