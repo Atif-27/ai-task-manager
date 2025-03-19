@@ -1,15 +1,5 @@
+import { Task } from "@/types/entity";
 import { create } from "zustand";
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: "pending" | "in_progress" | "completed";
-  priority: string;
-  assigned_to: string[];
-  assigned_by: string;
-  created_at: string;
-}
 
 interface TaskStore {
   tasks: Task[];
