@@ -31,8 +31,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ModeToggle } from "./ModeToggle";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -128,11 +128,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6 transition-all duration-200">
             {mounted && <>{isMobile ? <MobileMenuButton /> : <></>}</>}
             <div className="ml-auto flex items-center gap-4">
-              <Avatar className="h-8 w-8 transition-transform hover:scale-110">
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  JD
-                </AvatarFallback>
-              </Avatar>
+              <ModeToggle />
             </div>
           </header>
           <main className="flex-1 p-4 sm:p-6">

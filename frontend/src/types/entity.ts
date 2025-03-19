@@ -8,6 +8,7 @@ export interface Task {
   assigned_by: string;
   created_at: Date;
   updated_at: Date;
+  assigned_to_details?: User[];
 }
 
 export interface User {

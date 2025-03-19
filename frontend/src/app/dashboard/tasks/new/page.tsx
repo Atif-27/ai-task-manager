@@ -88,7 +88,6 @@ export default function TaskForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      console.log(formData);
       await axios.post("/tasks", formData);
       router.push("/dashboard");
     } catch (error) {

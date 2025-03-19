@@ -50,7 +50,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   }, [WS_URL]);
   const { auth } = useAuthStore();
   const userId = auth.userId;
-  console.log(userId);
 
   useEffect(() => {
     if (!socket) return;
@@ -63,8 +62,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         const data: TaskEvent = JSON.parse(event.data);
         switch (data.event) {
           case "task_created":
-            console.log(data.task.assigned_to);
-
             if (data.task.assigned_to.includes(userId!)) {
               addUserTask(data.task);
             }

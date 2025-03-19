@@ -17,6 +17,7 @@ import api from "@/utils/AxiosInstance";
 import { useTaskStore } from "@/stores/taskStore";
 import { Task } from "@/types/entity";
 import { TaskList } from "@/components/dashboard/TaskList";
+import { useRouter } from "next/navigation";
 // import { TaskList } from "@/components/dashboard/TaskList";
 
 export default function DashboardPage() {
@@ -154,6 +155,7 @@ interface TaskBoardProps {
 }
 
 function TaskBoard({ title, tasks }: TaskBoardProps) {
+  const router = useRouter();
   return (
     <Card>
       <CardHeader className="bg-muted/50 pb-3">
@@ -162,7 +164,13 @@ function TaskBoard({ title, tasks }: TaskBoardProps) {
       </CardHeader>
       <CardContent className="grid gap-2 p-2">
         {tasks.map((task) => (
-          <div key={task.id} className="rounded-md border p-3 card-hover">
+          <div
+            key={task.id}
+            className="rounded-md border p-3 card-hover cursor-pointer"
+            onClick={() => {
+              router.push("/dashboard/tasks/" + task.id);
+            }}
+          >
             <h3 className="font-medium">{task.title}</h3>
             <p className="text-sm text-muted-foreground">{task.description}</p>
           </div>
