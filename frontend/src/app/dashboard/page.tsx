@@ -62,26 +62,10 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 fade-in">
-        <TaskCard
-          title="Total Tasks"
-          count={stats.total}
-          change="+2 from yesterday"
-        />
-        <TaskCard
-          title="Pending"
-          count={stats.pending}
-          change="-1 from yesterday"
-        />
-        <TaskCard
-          title="In Progress"
-          count={stats.inProgress}
-          change="+3 from yesterday"
-        />
-        <TaskCard
-          title="Completed"
-          count={stats.completed}
-          change="+0 from yesterday"
-        />
+        <TaskCard title="Total Tasks" count={stats.total} />
+        <TaskCard title="Pending" count={stats.pending} />
+        <TaskCard title="In Progress" count={stats.inProgress} />
+        <TaskCard title="Completed" count={stats.completed} />
       </div>
 
       <div className="space-y-4 scale-in">
@@ -131,10 +115,9 @@ export default function DashboardPage() {
 interface TaskCardProps {
   title: string;
   count: number;
-  change: string;
 }
 
-function TaskCard({ title, count, change }: TaskCardProps) {
+function TaskCard({ title, count }: TaskCardProps) {
   return (
     <Card className="card-hover">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -142,7 +125,6 @@ function TaskCard({ title, count, change }: TaskCardProps) {
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{count}</div>
-        <p className="text-xs text-muted-foreground">{change}</p>
       </CardContent>
     </Card>
   );

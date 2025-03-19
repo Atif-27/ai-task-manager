@@ -1,5 +1,6 @@
 "use client";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { HydrationProvider } from "@/provider/HydrationProvider";
 import ProtectProvider from "@/provider/ProtectProvider";
 import { useAuthStore } from "@/stores/authStore";
 import { useSocketStore } from "@/stores/socketStore";
@@ -97,9 +98,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div>
-      <ProtectProvider>
-        <DashboardLayout>{children}</DashboardLayout>
-      </ProtectProvider>
+      <HydrationProvider>
+        <ProtectProvider>
+          <DashboardLayout>{children}</DashboardLayout>
+        </ProtectProvider>
+      </HydrationProvider>
     </div>
   );
 };

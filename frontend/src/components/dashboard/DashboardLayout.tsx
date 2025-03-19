@@ -33,6 +33,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ModeToggle } from "./ModeToggle";
+import Logout from "./Logout";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -107,17 +108,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                tooltip="Logout"
-                className="transition-all hover:translate-x-1"
-              >
-                <Link href="/auth/login">
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </Link>
-              </SidebarMenuButton>
+            <SidebarMenuItem className="flex items-center justify-center ">
+              <Button variant="destructive" className="cursor-pointer">
+                <Logout>
+                  <div className="flex gap-4 items-center justify-center">
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </div>
+                </Logout>
+              </Button>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>

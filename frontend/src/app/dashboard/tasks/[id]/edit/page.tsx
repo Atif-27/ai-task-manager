@@ -30,18 +30,15 @@ import { ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PriorityType, StatusType } from "@/types/constants";
-
-const users = [
-  { id: "1", name: "John Doe", avatar: "/placeholder.svg" },
-  { id: "2", name: "Jane Smith", avatar: "/placeholder.svg" },
-];
+import { User } from "@/types/entity";
 
 export default function UpdateTaskForm() {
   const router = useRouter();
-  const params = useParams()
-  const taskId = params?.id
+  const params = useParams();
+  const taskId = params?.id;
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [formData, setFormData] = useState({
@@ -49,34 +46,41 @@ export default function UpdateTaskForm() {
     description: "",
     status: "",
     priority: "",
-    assignedTo: [] as string[],
+    assigned_to: [] as string[],
   });
 
   useEffect(() => {
-    if (!taskId) {
-      setError(true);
-      setLoading(false);
-      return;
-    }
-    const fetchTask = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get(`/tasks/${taskId}`);
-        const task = response.data?.task;
-        setFormData({
+        // Fetch users first
+        const usersResponse = await axios.get("/users");
+        if (usersResponse.data.status === "success") {
+          setUsers(usersResponse.data.users);
+        }
+
+        // Then fetch task data if taskId exists
+        if (taskId) {
+          const taskResponse = await axios.get(`/tasks/${taskId}`);
+          const task = taskResponse.data?.task;
+          setFormData({
             title: task.title || "",
             description: task.description || "",
             status: task.status || StatusType.PENDING,
             priority: task.priority || PriorityType.LOW,
-            assignedTo: task.assigned_to || [],
+            assigned_to: task.assigned_to || [],
           });
-        setLoading(false);
+        } else {
+          setError(true);
+        }
       } catch (err) {
-        console.error("Error fetching task:", err);
+        console.error("Error fetching data:", err);
         setError(true);
+      } finally {
         setLoading(false);
       }
     };
-    fetchTask();
+
+    fetchData();
   }, [taskId]);
 
   const handleChange = (
@@ -91,12 +95,12 @@ export default function UpdateTaskForm() {
 
   const toggleUserSelection = (userId: string) => {
     setFormData((prev) => {
-      const isSelected = prev.assignedTo.includes(userId);
+      const isSelected = prev.assigned_to.includes(userId);
       return {
         ...prev,
-        assignedTo: isSelected
-          ? prev.assignedTo.filter((id) => id !== userId)
-          : [...prev.assignedTo, userId],
+        assigned_to: isSelected
+          ? prev.assigned_to.filter((id) => id !== userId)
+          : [...prev.assigned_to, userId],
       };
     });
   };
@@ -199,34 +203,41 @@ export default function UpdateTaskForm() {
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="justify-between">
-                    {formData.assignedTo.length > 0
-                      ? `${formData.assignedTo.length} user(s) selected`
+                    {formData.assigned_to.length > 0
+                      ? `${formData.assigned_to.length} user(s) selected`
                       : "Select users"}
                     <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0">
-                  {users.map((user) => (
-                    <div
-                      key={user.id}
-                      className="flex items-center p-2 cursor-pointer"
-                      onClick={() => toggleUserSelection(user.id)}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          formData.assignedTo.includes(user.id)
-                            ? "opacity-100"
-                            : "opacity-0"
-                        )}
-                      />
-                      {user.name}
-                    </div>
-                  ))}
+                  {users.length === 0 ? (
+                    <div className="p-4 text-center">No users found</div>
+                  ) : (
+                    users.map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center p-2 cursor-pointer"
+                        onClick={() => toggleUserSelection(user.id)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            formData.assigned_to.includes(user.id)
+                              ? "opacity-100"
+                              : "opacity-0"
+                          )}
+                        />
+                        <Avatar className="mr-2 h-6 w-6">
+                          <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        {user.name}
+                      </div>
+                    ))
+                  )}
                 </PopoverContent>
               </Popover>
               <div className="flex flex-wrap gap-2 mt-2">
-                {formData.assignedTo.map((userId) => {
+                {formData.assigned_to.map((userId) => {
                   const user = users.find((u) => u.id === userId);
                   return user ? (
                     <Badge
@@ -235,7 +246,6 @@ export default function UpdateTaskForm() {
                       className="flex items-center gap-1"
                     >
                       <Avatar className="h-4 w-4">
-                        <AvatarImage src={user.avatar} alt={user.name} />
                         <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       {user.name}

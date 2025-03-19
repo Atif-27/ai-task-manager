@@ -86,7 +86,9 @@ useEffect(() => {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">My Tasks</h1>
-          <p className="text-muted-foreground">View and manage tasks assigned to you</p>
+          <p className="text-muted-foreground">
+            View and manage tasks assigned to you
+          </p>
         </div>
         <Button asChild className="transition-all duration-300 hover:shadow-md">
           <Link href="/dashboard/tasks/new">
@@ -107,16 +109,23 @@ useEffect(() => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {highPriorityTasks.map(task => (
-                <div key={task.id} className="flex items-start gap-3 p-3 bg-background rounded-md border transition-all duration-300 hover:shadow-md">
+              {highPriorityTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="flex items-start gap-3 p-3 bg-background rounded-md border transition-all duration-300 hover:shadow-md"
+                >
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <ArrowUp className="h-4 w-4" />
                   </div>
                   <div>
                     <h3 className="font-medium">{task.title}</h3>
-                   
                   </div>
-                  <Button variant="outline" size="sm" className="ml-auto" asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-auto"
+                    asChild
+                  >
                     <Link href={`/dashboard/tasks/${task.id}`}>
                       View <ArrowRight className="ml-1 h-3 w-3" />
                     </Link>
@@ -137,7 +146,9 @@ useEffect(() => {
             <CardTitle className="text-sm font-medium">Pending</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{loading ? <Skeleton className="h-8 w-8" /> : taskCounts.pending}</div>
+            <div className="text-2xl font-bold">
+              {loading ? <Skeleton className="h-8 w-8" /> : taskCounts.pending}
+            </div>
           </CardContent>
         </Card>
         <Card
@@ -148,7 +159,13 @@ useEffect(() => {
             <CardTitle className="text-sm font-medium">In Progress</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{loading ? <Skeleton className="h-8 w-8" /> : taskCounts.in_progress}</div>
+            <div className="text-2xl font-bold">
+              {loading ? (
+                <Skeleton className="h-8 w-8" />
+              ) : (
+                taskCounts.in_progress
+              )}
+            </div>
           </CardContent>
         </Card>
         <Card
@@ -159,7 +176,13 @@ useEffect(() => {
             <CardTitle className="text-sm font-medium">Completed</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{loading ? <Skeleton className="h-8 w-8" /> : taskCounts.completed}</div>
+            <div className="text-2xl font-bold">
+              {loading ? (
+                <Skeleton className="h-8 w-8" />
+              ) : (
+                taskCounts.completed
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -168,7 +191,9 @@ useEffect(() => {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-bold">Task List</h2>
-            <p className="text-sm text-muted-foreground">All tasks assigned to you</p>
+            <p className="text-sm text-muted-foreground">
+              All tasks assigned to you
+            </p>
           </div>
           <div className="flex flex-col gap-4 sm:flex-row">
             <div className="flex items-center gap-2 relative">
@@ -217,7 +242,7 @@ useEffect(() => {
           <TabsContent value="list" className="mt-4">
             {loading ? (
               <div className="space-y-4">
-                {[1, 2, 3].map(i => (
+                {[1, 2, 3].map((i) => (
                   <div key={i} className="rounded-md border p-4">
                     <Skeleton className="h-6 w-2/3 mb-2" />
                     <Skeleton className="h-4 w-1/3" />
@@ -226,20 +251,31 @@ useEffect(() => {
               </div>
             ) : filteredTasks.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">No tasks found matching your filters</p>
+                <p className="text-muted-foreground">
+                  No tasks found matching your filters
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredTasks.map(task => (
-                  <div key={task.id} className="flex items-center justify-between p-4 bg-background rounded-md border transition-all duration-300 hover:shadow-md hover:border-primary/30">
+                {filteredTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between p-4 bg-background rounded-md border transition-all duration-300 hover:shadow-md hover:border-primary/30"
+                  >
                     <div className="space-y-1">
                       <h3 className="font-medium">{task.title}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-1">{task.description}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-1">
+                        {task.description}
+                      </p>
                       <div className="flex items-center gap-2 pt-1">
                         <Badge variant="secondary" className="capitalize">
-                          {task.status === "in_progress" ? "In Progress" : task.status}
+                          {task.status === "in_progress"
+                            ? "In Progress"
+                            : task.status}
                         </Badge>
-                        <PriorityBadge priority={task.priority} />
+                        <PriorityBadge
+                          priority={task.priority as "high" | "low" | "medium"}
+                        />
                       </div>
                     </div>
                     <Button variant="outline" size="sm" asChild>
@@ -258,7 +294,9 @@ useEffect(() => {
               <Card>
                 <CardHeader className="bg-muted/50 pb-3">
                   <CardTitle className="text-sm font-medium">Pending</CardTitle>
-                  <CardDescription>{tasksByStatus.pending.length} tasks</CardDescription>
+                  <CardDescription>
+                    {tasksByStatus.pending.length} tasks
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-2 p-2 max-h-[400px] overflow-y-auto">
                   {loading ? (
@@ -271,13 +309,23 @@ useEffect(() => {
                       No pending tasks
                     </div>
                   ) : (
-                    tasksByStatus.pending.map(task => (
-                      <Link key={task.id} href={`/dashboard/tasks/${task.id}`} className="block">
+                    tasksByStatus.pending.map((task) => (
+                      <Link
+                        key={task.id}
+                        href={`/dashboard/tasks/${task.id}`}
+                        className="block"
+                      >
                         <div className="rounded-md border p-3 transition-all duration-300 hover:shadow-md hover:-translate-y-1 hover:border-primary/50">
                           <h3 className="font-medium truncate">{task.title}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2">{task.description}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {task.description}
+                          </p>
                           <div className="mt-2">
-                            <PriorityBadge priority={task.priority} />
+                            <PriorityBadge
+                              priority={
+                                task.priority as "high" | "low" | "medium"
+                              }
+                            />
                           </div>
                         </div>
                       </Link>
@@ -285,12 +333,16 @@ useEffect(() => {
                   )}
                 </CardContent>
               </Card>
-              
+
               {/* In Progress Column */}
               <Card>
                 <CardHeader className="bg-muted/50 pb-3">
-                  <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-                  <CardDescription>{tasksByStatus.in_progress.length} tasks</CardDescription>
+                  <CardTitle className="text-sm font-medium">
+                    In Progress
+                  </CardTitle>
+                  <CardDescription>
+                    {tasksByStatus.in_progress.length} tasks
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-2 p-2 max-h-[400px] overflow-y-auto">
                   {loading ? (
@@ -303,13 +355,23 @@ useEffect(() => {
                       No tasks in progress
                     </div>
                   ) : (
-                    tasksByStatus.in_progress.map(task => (
-                      <Link key={task.id} href={`/dashboard/tasks/${task.id}`} className="block">
+                    tasksByStatus.in_progress.map((task) => (
+                      <Link
+                        key={task.id}
+                        href={`/dashboard/tasks/${task.id}`}
+                        className="block"
+                      >
                         <div className="rounded-md border p-3 transition-all duration-300 hover:shadow-md hover:-translate-y-1 hover:border-primary/50">
                           <h3 className="font-medium truncate">{task.title}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2">{task.description}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {task.description}
+                          </p>
                           <div className="mt-2">
-                            <PriorityBadge priority={task.priority} />
+                            <PriorityBadge
+                              priority={
+                                task.priority as "high" | "low" | "medium"
+                              }
+                            />
                           </div>
                         </div>
                       </Link>
@@ -317,12 +379,16 @@ useEffect(() => {
                   )}
                 </CardContent>
               </Card>
-              
+
               {/* Completed Column */}
               <Card>
                 <CardHeader className="bg-muted/50 pb-3">
-                  <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                  <CardDescription>{tasksByStatus.completed.length} tasks</CardDescription>
+                  <CardTitle className="text-sm font-medium">
+                    Completed
+                  </CardTitle>
+                  <CardDescription>
+                    {tasksByStatus.completed.length} tasks
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-2 p-2 max-h-[400px] overflow-y-auto">
                   {loading ? (
@@ -335,13 +401,23 @@ useEffect(() => {
                       No completed tasks
                     </div>
                   ) : (
-                    tasksByStatus.completed.map(task => (
-                      <Link key={task.id} href={`/dashboard/tasks/${task.id}`} className="block">
+                    tasksByStatus.completed.map((task) => (
+                      <Link
+                        key={task.id}
+                        href={`/dashboard/tasks/${task.id}`}
+                        className="block"
+                      >
                         <div className="rounded-md border p-3 transition-all duration-300 hover:shadow-md hover:-translate-y-1 hover:border-primary/50">
                           <h3 className="font-medium truncate">{task.title}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2">{task.description}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {task.description}
+                          </p>
                           <div className="mt-2">
-                            <PriorityBadge priority={task.priority} />
+                            <PriorityBadge
+                              priority={
+                                task.priority as "high" | "low" | "medium"
+                              }
+                            />
                           </div>
                         </div>
                       </Link>
@@ -354,5 +430,5 @@ useEffect(() => {
         </Tabs>
       </div>
     </div>
-  )
+  );
 }
