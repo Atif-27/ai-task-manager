@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/utils/AxiosInstance";
 import { AxiosError } from "axios";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 interface FormData {
   name: string;
@@ -20,7 +22,8 @@ export default function RegisterPage() {
     email: "",
     password: "",
   });
-
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -31,46 +34,80 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-        e.preventDefault();
-        const res=await api.post("/register",formData)
-        console.log(res);
+      e.preventDefault();
+      setLoading(true);
+      const res = api.post("/register", formData).then((res) => {
+        if (res.status >= 200 && res.status <= 399) router.push("/login");
+      });
+      toast.promise(res, {
+        pending: "Registering your account",
+        success: "Sucessfully Registered",
+        error: "Cannot register user",
+      });
     } catch (error) {
-        if (error instanceof AxiosError)
+      if (error instanceof AxiosError)
         console.log("Login error:", error.response?.data);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-black/88   p-4">
       <div className="mb-8 flex flex-col items-center text-center">
-        <h1 className="text-3xl text-white font-bold tracking-tight">AI Task Manager</h1>
+        <h1 className="text-3xl text-white font-bold tracking-tight">
+          AI Task Manager
+        </h1>
         <p className="text-muted-foreground">Create a new account</p>
       </div>
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Register</CardTitle>
-          <CardDescription>Enter your details to create a new account</CardDescription>
+          <CardDescription>
+            Enter your details to create a new account
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" placeholder="John Doe" value={formData.name} onChange={handleChange} required />
+              <Input
+                id="name"
+                placeholder="John Doe"
+                value={formData.name}
+                onChange={handleChange}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="name@example.com" value={formData.email} onChange={handleChange} required />
+              <Input
+                id="email"
+                type="email"
+                placeholder="name@example.com"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={formData.password} onChange={handleChange} required />
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
             </div>
-            <Button type="submit" className="w-full">Register</Button>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Loading....." : "Register"}
+            </Button>
           </form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-center text-sm">
-            Already have an account? {" "}
+            Already have an account?{" "}
             <Link href="/login" className="text-primary hover:underline">
               Login
             </Link>

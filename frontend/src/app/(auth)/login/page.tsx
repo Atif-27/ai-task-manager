@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import api from "@/utils/AxiosInstance";
 import { AxiosError } from "axios";
 import { useAuthStore } from "@/stores/authStore";
+import { toast } from "react-toastify";
 
 interface LoginForm {
   email: string;
@@ -31,10 +32,16 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const res = await api.post("/login", formData);
-      const token = res.data.token;
-      const userId = res.data.userId;
-      login(token, userId);
+      const res = api.post("/login", formData).then((data) => {
+        const token = data.data.token;
+        const userId = data.data.userId;
+        login(token, userId);
+      });
+      toast.promise(res, {
+        pending: "Logging in... Please wait",
+        success: "Login successful! Redirecting...",
+        error: "Invalid Credentials",
+      });
     } catch (error) {
       if (error instanceof AxiosError) {
         console.log("Login error:", error.response?.data);
