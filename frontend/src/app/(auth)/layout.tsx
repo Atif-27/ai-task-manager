@@ -10,7 +10,7 @@ const Layout = ({children}:{children:React.ReactNode}) => {
         useEffect(() => {
             const checkAuth = async () => {
                 if (auth.isLoggedIn) {
-                    router.push('/dashboard');
+                  // router.push('/dashboard');
                 } else {
                     setHasAccess(true);
                 }

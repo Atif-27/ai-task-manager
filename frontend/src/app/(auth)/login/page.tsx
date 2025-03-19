@@ -33,7 +33,8 @@ export default function LoginPage() {
     try {
       const res = await api.post("/login", formData);
       const token = res.data.token;
-      login(token);
+      const userId = res.data.userId;
+      login(token, userId);
     } catch (error) {
       if (error instanceof AxiosError) {
         console.log("Login error:", error.response?.data);
