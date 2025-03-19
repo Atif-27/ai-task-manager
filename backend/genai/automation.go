@@ -12,6 +12,7 @@ import (
 	"github.com/Atif-27/ai-task-manager/database"
 	"github.com/Atif-27/ai-task-manager/models"
 	"github.com/google/generative-ai-go/genai"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/api/option"
 )
@@ -22,6 +23,7 @@ type UserSession struct {
 	Model    *genai.GenerativeModel // Store the model instance with the session
 	LastUsed time.Time
 	UserID   string
+	Mutex    sync.Mutex
 }
 
 // SessionManager manages multiple user sessions
@@ -74,26 +76,47 @@ func (sm *SessionManager) createNewModel() *genai.GenerativeModel {
 		},
 		Required: []string{"title", "description", "priority"},
 	}
+	getUserTasksSchema := &genai.Schema{
+        Type: genai.TypeObject,
+        Properties: map[string]*genai.Schema{
+			"priority":{Type: genai.TypeString, Description: "Just a dummy text"},
+		},
+    }
 
 	taskTool := &genai.Tool{
 		FunctionDeclarations: []*genai.FunctionDeclaration{{
 			Name:        "create_task",
 			Description: "Create a new task with the given details. All fields (title, description, priority) are required.",
 			Parameters:  schema,
-		}},
+		},{
+                Name:        "get_user_tasks",
+                Description: "Get all tasks assigned to the current user.",
+                Parameters:  getUserTasksSchema,
+            },},
 	}
 
 	model := sm.client.GenerativeModel("gemini-1.5-pro-latest")
 	model.Tools = []*genai.Tool{taskTool}
 	model.SystemInstruction = &genai.Content{
 		Parts: []genai.Part{
-			genai.Text(`You are a task management assistant. Before calling the create_task function, ensure all required fields (title, description, priority) are provided.
-				If a field is explicitly stated in the user query, extract it directly. If a field can be reasonably inferred with at least 90% certainty, extract it. 
-				Only ask the user for missing fields when they cannot be reasonably deduced. Remember that each new message from the user is a response to your previous question.
-				The replies of the user will be relevant to the previous question asked. Avoid looping back to previously asked questions.
-				You have the freedom to generate the description and priority based on users first input if the user seems in hurry.
-				If the user does not specify a priority, default to "medium". Once all necessary fields are obtained, call the function without additional questioning.
-			`),
+			genai.Text(`You are a task management assistant. You can help users create tasks and prioritize their existing tasks.
+
+For task creation:
+Before calling the create_task function, ensure all required fields (title, description, priority) are provided.
+If a field is explicitly stated in the user query, extract it directly. If a field can be reasonably inferred with at least 90% certainty, extract it. 
+Only ask the user for missing fields when they cannot be reasonably deduced. Remember that each new message from the user is a response to your previous question.
+The replies of the user will be relevant to the previous question asked. Avoid looping back to previously asked questions.
+You have the freedom to generate the description and priority based on users first input if the user seems in hurry.
+If the user does not specify a priority, default to "medium". Once all necessary fields are obtained, call the function without additional questioning.
+
+For task prioritization:
+When a user asks what tasks they should prioritize today or similar questions about task prioritization, call the get_user_tasks function.
+After receiving the list of tasks, analyze them considering:
+- Priority level (high takes precedence over medium and low)
+- Due dates if available (closer due dates are more urgent)
+- Task status (focus on pending tasks)
+Then recommend which task(s) the user should focus on first, explaining your reasoning in a clear, concise manner.
+`),
 		},
 	}
 
@@ -171,82 +194,144 @@ func (sm *SessionManager) sessionCleanup() {
 }
 
 // ProcessConversation processes a message in the context of a conversation
+// Define a simpler task representation for API responses
+type SimpleTask struct {
+    ID          string `json:"id"`
+    Title       string `json:"title"`
+    Description string `json:"description"`
+    Priority    string `json:"priority"`
+    Status      string `json:"status"`
+    CreatedAt   string `json:"createdAt"`
+}
+
+// ProcessConversation processes a message in the context of a conversation
 func ProcessConversation(ctx context.Context, userMessage string, userID string) (string, error) {
-	// Get or create session manager
-	sm, err := GetSessionManager(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to initialize session manager: %v", err)
-	}
+    // Get or create session manager
+    sm, err := GetSessionManager(ctx)
+    if err != nil {
+        return "", fmt.Errorf("failed to initialize session manager: %v", err)
+    }
 
-	// Get or create a chat session for this user
-	userSession := sm.GetOrCreateSession(userID)
+    // Get or create a chat session for this user
+    userSession := sm.GetOrCreateSession(userID)
 
-	// Use a mutex to ensure that each user's conversation is processed sequentially
-	// This prevents race conditions between multiple messages from the same user
-	sessionMutex := &sync.Mutex{}
-	sessionMutex.Lock()
-	defer sessionMutex.Unlock()
+    userSession.Mutex.Lock()
+    defer userSession.Mutex.Unlock()
 
-	// Send the message in the context of the ongoing conversation
-	res, err := userSession.Session.SendMessage(ctx, genai.Text(userMessage))
-	if err != nil {
-		return "", fmt.Errorf("session.SendMessage: %v", err)
-	}
+    // Send the message in the context of the ongoing conversation
+    res, err := userSession.Session.SendMessage(ctx, genai.Text(userMessage))
+    if err != nil {
+        return "", fmt.Errorf("session.SendMessage: %v", err)
+    }
 
-	// Update the session timestamp
-	sm.UpdateSessionTimestamp(userID)
+    // Update the session timestamp
+    sm.UpdateSessionTimestamp(userID)
 
-	var aiResponse string
+    var aiResponse strings.Builder
 
-	// Process all response parts
-	for _, cand := range res.Candidates {
-		for _, part := range cand.Content.Parts {
-			if funcall, ok := part.(genai.FunctionCall); ok {
-				// Extract task details
-				title, _ := funcall.Args["title"].(string)
-				description, _ := funcall.Args["description"].(string)
-				priority, _ := funcall.Args["priority"].(string)
+    // Process all response parts
+    for _, cand := range res.Candidates {
+        for _, part := range cand.Content.Parts {
+            if textPart, isText := part.(genai.Text); isText {
+                // Append text response
+                aiResponse.WriteString(string(textPart))
+            } else if funcall, ok := part.(genai.FunctionCall); ok {
+                var fnResponse *genai.GenerateContentResponse
+                var fnErr error
 
-				// Create the task
-				task, err := CreateTask(title, description, priority, userID)
-				if err != nil {
-					return aiResponse, fmt.Errorf("failed to create task: %v", err)
-				}
+                switch funcall.Name {
+                case "create_task":
+                    // Extract task details with proper type checking
+                    title, ok1 := funcall.Args["title"].(string)
+                    description, ok2 := funcall.Args["description"].(string)
+                    priority, ok3 := funcall.Args["priority"].(string)
 
-				// Send function response back to model
-				fnResponse, err := userSession.Session.SendMessage(ctx, genai.FunctionResponse{
-					Name: funcall.Name,
-					Response: map[string]any{
-						"success": true,
-						"taskId":  task.ID.Hex(),
-						"message": "Task created successfully",
-					},
-				})
-				if err != nil {
-					log.Println("Error sending function response:", err)
-					return aiResponse, nil
-				}
+                    if !ok1 || !ok2 || !ok3 {
+                        return aiResponse.String(), fmt.Errorf("invalid task parameters received from model")
+                    }
 
-				// After task creation, reset the session to start fresh for next task
-				// This is optional - remove if you want to maintain conversation context after task creation
-				sm.ClearSession(userID)
+                    // Create the task
+                    task, err := CreateTask(title, description, priority, userID)
+                    if err != nil {
+                        // Send error response back to model
+                        fnResponse, fnErr = userSession.Session.SendMessage(ctx, genai.FunctionResponse{
+                            Name: funcall.Name,
+                            Response: map[string]interface{}{
+                                "success": false,
+                                "error":   err.Error(),
+                            },
+                        })
+                    } else {
+                        // Send success response back to model
+                        fnResponse, fnErr = userSession.Session.SendMessage(ctx, genai.FunctionResponse{
+                            Name: funcall.Name,
+                            Response: map[string]interface{}{
+                                "success": true,
+                                "taskId":  task.ID.Hex(),
+                                "message": "Task created successfully",
+                            },
+                        })
+                    }
 
-				// Capture the final AI response after function execution
-				for _, fnCand := range fnResponse.Candidates {
-					for _, fnPart := range fnCand.Content.Parts {
-						if textPart, isText := fnPart.(genai.Text); isText {
-							aiResponse += string(textPart)
-						}
-					}
-				}
-			} else if textPart, isText := part.(genai.Text); isText {
-				// Append text response before function call
-				aiResponse += string(textPart)
-			}
-		}
-	}
+                case "get_user_tasks":
+                    // Get tasks for the user
+                    tasks, err := GetUserTasks(userID)
+                    if err != nil {
+                        // Send error response back to model
+                        fnResponse, fnErr = userSession.Session.SendMessage(ctx, genai.FunctionResponse{
+                            Name: funcall.Name,
+                            Response: map[string]interface{}{
+                                "success": false,
+                                "error":   err.Error(),
+                            },
+                        })
+                    } else {
+                        // Create a text representation of tasks instead of trying to send complex objects
+                        taskSummary := "Tasks:\n"
+                        for _, task := range tasks {
+                            taskSummary += fmt.Sprintf("- ID: %s\n  Title: %s\n  Description: %s\n  Priority: %s\n  Status: %s\n  Created: %s\n\n",
+                                task.ID.Hex(),
+                                task.Title,
+                                task.Description,
+                                string(task.Priority),
+                                string(task.Status),
+                                task.CreatedAt.Format(time.RFC3339))
+                        }
+                        
+                        // Send success response back to model
+                        fnResponse, fnErr = userSession.Session.SendMessage(ctx, genai.FunctionResponse{
+                            Name: funcall.Name,
+                            Response: map[string]interface{}{
+                                "success": true,
+                                "summary": taskSummary,
+                            },
+                        })
+                    }
 
-	return aiResponse, nil
+                default:
+                    return aiResponse.String(), fmt.Errorf("unknown function call: %s", funcall.Name)
+                }
+
+                if fnErr != nil {
+                    log.Printf("Error sending function response for %s: %v", funcall.Name, fnErr)
+                    continue
+                }
+
+                // Process the model's response to the function call
+                if fnResponse != nil {
+                    for _, fnCand := range fnResponse.Candidates {
+                        for _, fnPart := range fnCand.Content.Parts {
+                            if textPart, isText := fnPart.(genai.Text); isText {
+                                aiResponse.WriteString(string(textPart))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return aiResponse.String(), nil
 }
 
 // Task represents a task in our system
@@ -293,4 +378,28 @@ func CreateTask(title string, description string, priority string, userID string
 		return nil, fmt.Errorf("failed to create task: %v", err)
 	}
 	return &task, nil
+}
+
+// GetUserTasks retrieves all tasks assigned to a user
+func GetUserTasks(userID string) ([]models.Task, error) {
+    ctx := context.Background()
+    taskCollection := database.GetCollection("task")
+    
+    userObjID, err := primitive.ObjectIDFromHex(userID)
+    if err != nil {
+        return nil, fmt.Errorf("invalid user ID: %v", err)
+    }
+    
+    filter := bson.M{"assigned_to": userObjID}
+    cursor, err := taskCollection.Find(ctx, filter)
+    if err != nil {
+        return nil, fmt.Errorf("could not fetch assigned tasks: %v", err)
+    }
+    
+    var tasks []models.Task
+    if err := cursor.All(ctx, &tasks); err != nil {
+        return nil, fmt.Errorf("failed to parse assigned tasks: %v", err)
+    }
+    
+    return tasks, nil
 }
