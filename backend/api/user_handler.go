@@ -55,5 +55,5 @@ func (u *UserHandler) Login(c *fiber.Ctx) error {
 	}
 	// TODO: Implement cookie based
 	token, _ := utils.GenerateToken(user.ID.Hex(), user.Email)
-	return c.JSON(fiber.Map{"token": token})
+	return c.JSON(fiber.Map{"token": token,"userId": user.ID})
 }
