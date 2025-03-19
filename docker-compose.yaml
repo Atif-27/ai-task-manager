@@ -1,0 +1,46 @@
+version: "3.9"
+services:
+  mongo:
+    image: mongo:latest
+    container_name: "mongo"
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb:/data/db
+      - mongoconfig:/data/configdb
+    networks:
+      - ai-task-management
+
+  api:
+    build: ./backend
+    container_name: task-management
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - "mongo"
+    networks:
+      - ai-task-management
+
+  frontend:
+    build: ./frontend
+    container_name: task-frontend
+    env_file:
+      - ./frontend/.env
+    ports:
+      - "3000:3000" 
+    depends_on:
+      - "api"
+    networks:
+      - ai-task-management
+
+
+
+networks:
+  ai-task-management:
+    driver: bridge
+
+volumes:
+  mongodb:
+  mongoconfig:
