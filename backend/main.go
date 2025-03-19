@@ -45,7 +45,9 @@ func main() {
 	apiV1.Get("/tasks", middleware.AuthMiddleware, taskHandler.GetAllTasks)
 	apiV1.Get("/tasks/me", middleware.AuthMiddleware, taskHandler.GetUserTasks)
 	apiV1.Get("/tasks/:id", taskHandler.GetTaskByID)
-
+	apiV1.Post("/check",middleware.AuthMiddleware,func(c *fiber.Ctx) error {
+		return c.SendString("Auth Working")
+	})
 	apiV1.Get("/ws", websocket.New(ws.HandleWebSocketConnection))
 	port := os.Getenv("PORT")
 	log.Fatal(app.Listen(":" + port))

@@ -4,12 +4,11 @@ import { HydrationProvider } from "@/provider/HydrationProvider";
 import ProtectProvider from "@/provider/ProtectProvider";
 import { useAuthStore } from "@/stores/authStore";
 import { useSocketStore } from "@/stores/socketStore";
-import { useTaskStore } from "@/stores/taskStore"; // Import task store to update state
+import { useTaskStore } from "@/stores/taskStore";
 import { Task } from "@/types/entity";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 // Define Task and Event Data Types
-
 interface TaskCreatedEvent {
   event: "task_created";
   task: Task;
@@ -38,26 +37,49 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     updateUserTask,
     deleteUserTask,
   } = useTaskStore();
+  const { auth, checkStat } = useAuthStore();
+  const [apiReady, setApiReady] = useState(false);
   const WS_URL = process.env.NEXT_PUBLIC_WS_URL;
-
+  const userId = auth.userId;
+  const isAuthenticated = auth.isLoggedIn;
+  // First, check if the authentication is ready
   useEffect(() => {
-    if (WS_URL && !socket) {
+    if (isAuthenticated) {
+      // Simulate or verify API readiness
+      // You can replace this with actual API check if needed
+      const checkApiStatus = async () => {
+        try {
+          await checkStat();
+          setApiReady(true);
+        } catch (error) {
+          console.error("Failed to check API status:", error);
+        }
+      };
+
+      checkApiStatus();
+    }
+  }, [isAuthenticated]);
+
+  // Only establish WebSocket connection when both auth and API are ready
+  useEffect(() => {
+    if (WS_URL && !socket && isAuthenticated && apiReady) {
+      console.log("Establishing WebSocket connection...");
       connect(WS_URL);
     }
 
     return () => {
-      disconnect();
+      if (socket) {
+        disconnect();
+      }
     };
-  }, [WS_URL]);
-  const { auth } = useAuthStore();
-  const userId = auth.userId;
+  }, [WS_URL, socket, connect, disconnect, isAuthenticated, apiReady]);
 
+  // WebSocket event handlers
   useEffect(() => {
     if (!socket) return;
 
-    // WebSocket event handler
     const handleMessage = (event: MessageEvent) => {
-      console.log("message");
+      console.log("WebSocket message received");
 
       try {
         const data: TaskEvent = JSON.parse(event.data);
@@ -94,7 +116,16 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     return () => {
       socket.removeEventListener("message", handleMessage);
     };
-  }, [socket, addTask, updateTask, deleteTask]);
+  }, [
+    socket,
+    addTask,
+    updateTask,
+    deleteTask,
+    addUserTask,
+    updateUserTask,
+    deleteUserTask,
+    userId,
+  ]);
 
   return (
     <div>

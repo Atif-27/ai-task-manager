@@ -1,3 +1,4 @@
+import api from "@/utils/AxiosInstance";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
@@ -11,6 +12,7 @@ interface AuthState {
   login: (token: string, userId: string) => void;
   logout: () => void;
   setHydrated: (state: boolean) => void;
+  checkStat: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -27,6 +29,9 @@ export const useAuthStore = create<AuthState>()(
       logout: () =>
         set({ auth: { isLoggedIn: false, token: null, userId: null } }),
       setHydrated: (state) => set({ hydrated: state }),
+      checkStat: async () => {
+        api.post("/check");
+      },
     }),
     {
       name: "auth-storage",
