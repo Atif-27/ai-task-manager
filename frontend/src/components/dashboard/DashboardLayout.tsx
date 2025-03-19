@@ -4,7 +4,14 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart3, CheckSquare, Cog, Home, LogOut, BotIcon as Robot, Search, Menu } from "lucide-react"
+import {
+  BarChart3,
+  CheckSquare,
+  Home,
+  LogOut,
+  BotIcon as Robot,
+  Menu,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -21,27 +28,25 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarSeparator,
-  SidebarTrigger,
   useSidebar,
-} from "@/components/ui/sidebar"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { useIsMobile } from "@/hooks/use-mobile"
+} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DashboardLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const pathname = usePathname()
-  const isMobile = useIsMobile()
-  const [mounted, setMounted] = useState(false)
+  const pathname = usePathname();
+  const isMobile = useIsMobile();
+  const [mounted, setMounted] = useState(false);
 
   // Prevent hydration mismatch
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   const navItems = [
     {
@@ -59,12 +64,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: Robot,
       href: "/dashboard/automation",
     },
-    {
-      title: "Settings",
-      icon: Cog,
-      href: "/dashboard/settings",
-    },
-  ]
+  ];
 
   return (
     <SidebarProvider>
@@ -78,14 +78,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
           <SidebarSeparator />
           <form className="px-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search tasks..."
-                className="w-full bg-background pl-8 focus-visible:ring-1 focus-visible:ring-ring transition-all"
-              />
-            </div>
+            <div className="relative"></div>
           </form>
         </SidebarHeader>
         <SidebarContent>
@@ -115,7 +108,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Logout" className="transition-all hover:translate-x-1">
+              <SidebarMenuButton
+                asChild
+                tooltip="Logout"
+                className="transition-all hover:translate-x-1"
+              >
                 <Link href="/auth/login">
                   <LogOut className="h-4 w-4" />
                   <span>Logout</span>
@@ -129,14 +126,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <SidebarInset className="bg-background">
         <div className="flex min-h-screen flex-col">
           <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6 transition-all duration-200">
-            {mounted && (
-              <>
-                {isMobile ? <MobileMenuButton /> : <SidebarTrigger className="transition-transform hover:scale-110" />}
-              </>
-            )}
+            {mounted && <>{isMobile ? <MobileMenuButton /> : <></>}</>}
             <div className="ml-auto flex items-center gap-4">
               <Avatar className="h-8 w-8 transition-transform hover:scale-110">
-                <AvatarFallback className="bg-primary text-primary-foreground">JD</AvatarFallback>
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  JD
+                </AvatarFallback>
               </Avatar>
             </div>
           </header>
@@ -146,7 +141,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }
 
 function MobileMenuButton() {
