@@ -15,18 +15,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import api from "@/utils/AxiosInstance";
 import { useTaskStore } from "@/stores/taskStore";
+import { Task } from "@/types/entity";
+import { TaskList } from "@/components/dashboard/TaskList";
 // import { TaskList } from "@/components/dashboard/TaskList";
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: "pending" | "in_progress" | "completed";
-  priority: string;
-  assigned_to: string[];
-  assigned_by: string;
-  created_at: Date;
-}
 
 export default function DashboardPage() {
   const { tasks, setTasks } = useTaskStore();
@@ -109,7 +100,7 @@ export default function DashboardPage() {
           </TabsList>
 
           <TabsContent value="list" className="mt-4">
-            {/* <TaskList tasks={tasks} /> */}
+            <TaskList />
           </TabsContent>
 
           {/* Board View (Example) */}

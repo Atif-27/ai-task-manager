@@ -3,20 +3,11 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import ProtectProvider from "@/provider/ProtectProvider";
 import { useSocketStore } from "@/stores/socketStore";
 import { useTaskStore } from "@/stores/taskStore"; // Import task store to update state
+import { Task } from "@/types/entity";
 import React, { useEffect } from "react";
 
 // Define Task and Event Data Types
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: "pending" | "in_progress" | "completed";
-  priority: "low" | "medium" | "high";
-  assigned_to: string[];
-  assigned_by: string;
-  created_at: string;
-  updated_at: string;
-}
+
 
 interface TaskCreatedEvent {
   event: "task_created";

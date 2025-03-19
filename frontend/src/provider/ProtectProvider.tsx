@@ -11,7 +11,7 @@ const ProtectProvider = ({children}:{children:React.ReactNode}) => {
     useEffect(() => {
         const checkAuth = async () => {
           if (!auth.isLoggedIn) {
-            router.push("/login");
+            // router.push("/login");
           } else {
             setHasAccess(true);
           }

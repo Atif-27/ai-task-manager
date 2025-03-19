@@ -1,10 +1,12 @@
-import Link from "next/link"
-import { MoreHorizontal } from "lucide-react"
+"use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import Link from "next/link";
+import { MoreHorizontal } from "lucide-react";
+import { useTaskStore } from "@/stores/taskStore";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,58 +14,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-
-// Sample task data
-const tasks = [
-  {
-    id: "1",
-    title: "Implement dark mode for the dashboard",
-    status: "In Progress",
-    priority: "Medium",
-    assignedTo: "John Doe",
-    createdAt: "2023-03-15T10:30:00Z",
-    updatedAt: "2023-03-16T14:45:00Z",
-  },
-  {
-    id: "2",
-    title: "Fix login page responsiveness",
-    status: "Pending",
-    priority: "High",
-    assignedTo: "Jane Smith",
-    createdAt: "2023-03-14T09:15:00Z",
-    updatedAt: "2023-03-14T09:15:00Z",
-  },
-  {
-    id: "3",
-    title: "Create user documentation",
-    status: "Completed",
-    priority: "Low",
-    assignedTo: "John Doe",
-    createdAt: "2023-03-10T11:45:00Z",
-    updatedAt: "2023-03-13T16:30:00Z",
-  },
-  {
-    id: "4",
-    title: "Update API endpoints",
-    status: "In Progress",
-    priority: "Medium",
-    assignedTo: "Jane Smith",
-    createdAt: "2023-03-12T13:20:00Z",
-    updatedAt: "2023-03-15T10:10:00Z",
-  },
-  {
-    id: "5",
-    title: "Design new landing page",
-    status: "Pending",
-    priority: "High",
-    assignedTo: "John Doe",
-    createdAt: "2023-03-16T08:45:00Z",
-    updatedAt: "2023-03-16T08:45:00Z",
-  },
-]
+} from "@/components/ui/dropdown-menu";
+import { PriorityType, StatusType } from "@/types/constants";
 
 export function TaskList() {
+  const { tasks } = useTaskStore();
+
   return (
     <div className="space-y-4">
       {tasks.map((task) => (
@@ -71,42 +27,68 @@ export function TaskList() {
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
               <div>
-                <Link href={`/dashboard/tasks/${task.id}`} className="font-medium hover:underline transition-colors">
+                <Link
+                  href={`/dashboard/tasks/${task.id}`}
+                  className="font-medium hover:underline transition-colors"
+                >
                   {task.title}
                 </Link>
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                   <Badge
                     variant={
-                      task.status === "Completed" ? "default" : task.status === "In Progress" ? "secondary" : "outline"
+                      task.status === StatusType.COMPLETED
+                        ? "default"
+                        : task.status === StatusType.IN_PROGRESS
+                        ? "secondary"
+                        : "outline"
                     }
-                    className={`${task.status === "Pending" ? "status-pending" : task.status === "In Progress" ? "status-in-progress" : "status-completed"}`}
+                    className={`
+    ${task.status === StatusType.PENDING ? "status-pending" : ""}
+    ${task.status === StatusType.IN_PROGRESS ? "status-in-progress" : ""}
+    ${task.status === StatusType.COMPLETED ? "status-completed" : ""}
+  `}
                   >
                     {task.status}
                   </Badge>
+
                   <Badge
                     variant={
-                      task.priority === "High" ? "destructive" : task.priority === "Medium" ? "secondary" : "outline"
+                      task.priority === PriorityType.HIGH
+                        ? "destructive"
+                        : task.priority === PriorityType.MEDIUM
+                        ? "secondary"
+                        : "outline"
                     }
-                    className={`${task.priority === "Low" ? "priority-low" : task.priority === "Medium" ? "priority-medium" : "priority-high"}`}
+                    className={`
+    ${task.priority === PriorityType.LOW ? "priority-low" : ""}
+    ${task.priority === PriorityType.MEDIUM ? "priority-medium" : ""}
+    ${task.priority === PriorityType.HIGH ? "priority-high" : ""}
+  `}
                   >
                     {task.priority}
                   </Badge>
-                  <span>Updated {new Date(task.updatedAt).toLocaleDateString()}</span>
+                  <span>
+                    Updated {new Date(task.updated_at).toLocaleDateString()}
+                  </span>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8 transition-transform hover:scale-110">
-                <AvatarFallback>
+                {/* <AvatarFallback>
                   {task.assignedTo
                     .split(" ")
                     .map((name) => name[0])
                     .join("")}
-                </AvatarFallback>
+                </AvatarFallback> */}
               </Avatar>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="transition-transform hover:scale-110">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="transition-transform hover:scale-110"
+                  >
                     <MoreHorizontal className="h-4 w-4" />
                     <span className="sr-only">More options</span>
                   </Button>
@@ -114,13 +96,19 @@ export function TaskList() {
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
                   <DropdownMenuItem asChild>
-                    <Link href={`/dashboard/tasks/${task.id}`}>View Details</Link>
+                    <Link href={`/dashboard/tasks/${task.id}`}>
+                      View Details
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href={`/dashboard/tasks/${task.id}/edit`}>Edit Task</Link>
+                    <Link href={`/dashboard/tasks/${task.id}/edit`}>
+                      Edit Task
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive">Delete Task</DropdownMenuItem>
+                  <DropdownMenuItem className="text-destructive">
+                    Delete Task
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -128,6 +116,5 @@ export function TaskList() {
         </Card>
       ))}
     </div>
-  )
+  );
 }
-
