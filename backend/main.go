@@ -27,11 +27,13 @@ func main() {
 	origin:= os.Getenv("ORIGIN_URL")
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     origin,
-		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowHeaders:     "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With",
 		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
 		AllowCredentials: true,
 	}))
-
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Health check")
+	})
 	apiV1 := app.Group("/api/v1")
 	apiV1.Post("/register", userHandler.Register)
 	apiV1.Post("/login", userHandler.Login)
