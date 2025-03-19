@@ -27,7 +27,7 @@ func MakeTaskHandler() *TaskHandler {
 
 type TaskWithUserDetails struct {
 	models.Task
-	AssignedToDetails []models.User `json:"assigned_to_details"`
+	AssignedToDetails []models.UserRequest `json:"assigned_to_details"`
 }
 
 func (t *TaskHandler) CreateTask(c *fiber.Ctx) error {
@@ -150,7 +150,7 @@ func (t *TaskHandler) GetAllTasks(c *fiber.Ctx) error {
 	for _, task := range tasks {
 		enhancedTask := TaskWithUserDetails{
 			Task:              task,
-			AssignedToDetails: []models.User{},
+			AssignedToDetails: []models.UserRequest{},
 		}
 		if len(task.AssignedTo) > 0 {
 			userIDs := make([]primitive.ObjectID, len(task.AssignedTo))
@@ -158,7 +158,7 @@ func (t *TaskHandler) GetAllTasks(c *fiber.Ctx) error {
 
 			userCursor, err := t.userCollection.Find(c.Context(), bson.M{"_id": bson.M{"$in": userIDs}})
 			if err == nil {
-				var users []models.User
+				var users []models.UserRequest
 				if err := userCursor.All(c.Context(), &users); err == nil {
 					enhancedTask.AssignedToDetails = users
 				}
@@ -194,7 +194,7 @@ func (t *TaskHandler) GetUserTasks(c *fiber.Ctx) error {
 	for _, task := range tasks {
 		enhancedTask := TaskWithUserDetails{
 			Task:              task,
-			AssignedToDetails: []models.User{},
+			AssignedToDetails: []models.UserRequest{},
 		}
 
 		if len(task.AssignedTo) > 0 {
@@ -203,7 +203,7 @@ func (t *TaskHandler) GetUserTasks(c *fiber.Ctx) error {
 
 			userCursor, err := t.userCollection.Find(c.Context(), bson.M{"_id": bson.M{"$in": userIDs}})
 			if err == nil {
-				var users []models.User
+				var users []models.UserRequest
 				if err := userCursor.All(c.Context(), &users); err == nil {
 					enhancedTask.AssignedToDetails = users
 				}
@@ -236,11 +236,11 @@ func (t *TaskHandler) GetTaskByID(c *fiber.Ctx) error {
 
 	type TaskWithUserDetails struct {
 		models.Task
-		AssignedToDetails []models.User `json:"assigned_to_details"`
+		AssignedToDetails []models.UserRequest `json:"assigned_to_details"`
 	}
 	enhancedTask := TaskWithUserDetails{
 		Task:              task,
-		AssignedToDetails: []models.User{},
+		AssignedToDetails: []models.UserRequest{},
 	}
 
 	if len(task.AssignedTo) > 0 {
@@ -253,7 +253,7 @@ func (t *TaskHandler) GetTaskByID(c *fiber.Ctx) error {
 			if err := userCursor.All(c.Context(), &users); err == nil {
 
 				for _, user := range users {
-					safeUser := models.User{
+					safeUser := models.UserRequest{
 						ID:    user.ID,
 						Name:  user.Name,
 						Email: user.Email,

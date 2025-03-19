@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/Atif-27/ai-task-manager/database"
 	"github.com/Atif-27/ai-task-manager/models"
 	utils "github.com/Atif-27/ai-task-manager/utilits"
@@ -27,9 +29,17 @@ func (u *UserHandler) Register(c *fiber.Ctx) error {
 	if err := c.BodyParser(&user); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
 	}
+	var existingUser models.User
+	err := u.userCollection.FindOne(c.Context(), bson.M{"email": user.Email}).Decode(&existingUser)
+	if err == nil {
+		// Email already exists
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "Email already registered"})
+	} 
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	user.Password = string(hashedPassword)
-	_, err := u.userCollection.InsertOne(c.Context(), user)
+	fmt.Println(user)
+
+	_, err = u.userCollection.InsertOne(c.Context(), user)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not register"})
 	}
@@ -41,7 +51,7 @@ func (u *UserHandler) Login(c *fiber.Ctx) error {
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
 	}
-
+	fmt.Println(input)
 	var user models.User
 	err := u.userCollection.FindOne(c.Context(), bson.M{"email": input.Email}).Decode(&user)
 
