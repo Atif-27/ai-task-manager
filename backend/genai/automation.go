@@ -18,10 +18,10 @@ import (
 
 // UserSession holds a user's chat session and related metadata
 type UserSession struct {
-	Session   *genai.ChatSession
-	Model     *genai.GenerativeModel  // Store the model instance with the session
-	LastUsed  time.Time
-	UserID    string
+	Session  *genai.ChatSession
+	Model    *genai.GenerativeModel // Store the model instance with the session
+	LastUsed time.Time
+	UserID   string
 }
 
 // SessionManager manages multiple user sessions
@@ -111,7 +111,7 @@ func (sm *SessionManager) GetOrCreateSession(userID string) *UserSession {
 		model := sm.createNewModel()
 		newSession := &UserSession{
 			Session:  model.StartChat(),
-			Model:    model,  // Store the model instance with the session
+			Model:    model, // Store the model instance with the session
 			LastUsed: time.Now(),
 			UserID:   userID,
 		}
@@ -128,7 +128,7 @@ func (sm *SessionManager) GetOrCreateSession(userID string) *UserSession {
 func (sm *SessionManager) UpdateSessionTimestamp(userID string) {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
-	
+
 	if session, exists := sm.sessions[userID]; exists {
 		session.LastUsed = time.Now()
 	}
@@ -180,7 +180,7 @@ func ProcessConversation(ctx context.Context, userMessage string, userID string)
 
 	// Get or create a chat session for this user
 	userSession := sm.GetOrCreateSession(userID)
-	
+
 	// Use a mutex to ensure that each user's conversation is processed sequentially
 	// This prevents race conditions between multiple messages from the same user
 	sessionMutex := &sync.Mutex{}
@@ -208,7 +208,7 @@ func ProcessConversation(ctx context.Context, userMessage string, userID string)
 				priority, _ := funcall.Args["priority"].(string)
 
 				// Create the task
-				task, err := CreateTask(title, description, priority,userID)
+				task, err := CreateTask(title, description, priority, userID)
 				if err != nil {
 					return aiResponse, fmt.Errorf("failed to create task: %v", err)
 				}
@@ -218,7 +218,7 @@ func ProcessConversation(ctx context.Context, userMessage string, userID string)
 					Name: funcall.Name,
 					Response: map[string]any{
 						"success": true,
-						"taskId":   task.ID.Hex(),
+						"taskId":  task.ID.Hex(),
 						"message": "Task created successfully",
 					},
 				})
@@ -260,7 +260,7 @@ type Task struct {
 
 // CreateTask creates a new task from conversation extracted details
 func CreateTask(title string, description string, priority string, userID string) (*models.Task, error) {
-    ctx := context.Background()
+	ctx := context.Background()
 	taskCollection := database.GetCollection("task")
 	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
@@ -275,7 +275,7 @@ func CreateTask(title string, description string, priority string, userID string
 	default:
 		taskPriority = models.LOW
 	}
-	
+
 	// Create new task
 	task := models.Task{
 		Title:       title,
@@ -290,7 +290,7 @@ func CreateTask(title string, description string, priority string, userID string
 	}
 	_, err = taskCollection.InsertOne(ctx, task)
 	if err != nil {
-		return nil , fmt.Errorf("failed to create task: %v", err)
+		return nil, fmt.Errorf("failed to create task: %v", err)
 	}
-    return &task, nil
+	return &task, nil
 }

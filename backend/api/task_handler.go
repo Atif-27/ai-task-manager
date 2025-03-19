@@ -14,13 +14,20 @@ import (
 
 type TaskHandler struct {
 	taskCollection *mongo.Collection
+	userCollection *mongo.Collection
 }
 
 // Constructor function for TaskHandler
 func MakeTaskHandler() *TaskHandler {
 	return &TaskHandler{
 		taskCollection: database.GetCollection("task"),
+		userCollection: database.GetCollection("user"),
 	}
+}
+
+type TaskWithUserDetails struct {
+	models.Task
+	AssignedToDetails []models.User `json:"assigned_to_details"`
 }
 
 func (t *TaskHandler) CreateTask(c *fiber.Ctx) error {
@@ -138,7 +145,31 @@ func (t *TaskHandler) GetAllTasks(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to parse tasks"})
 	}
 
-	return c.JSON(fiber.Map{"tasks": tasks})
+	tasksWithDetails := make([]TaskWithUserDetails, 0, len(tasks))
+
+	for _, task := range tasks {
+		enhancedTask := TaskWithUserDetails{
+			Task:              task,
+			AssignedToDetails: []models.User{},
+		}
+		if len(task.AssignedTo) > 0 {
+			userIDs := make([]primitive.ObjectID, len(task.AssignedTo))
+			copy(userIDs, task.AssignedTo)
+
+			userCursor, err := t.userCollection.Find(c.Context(), bson.M{"_id": bson.M{"$in": userIDs}})
+			if err == nil {
+				var users []models.User
+				if err := userCursor.All(c.Context(), &users); err == nil {
+					enhancedTask.AssignedToDetails = users
+				}
+				userCursor.Close(c.Context())
+			}
+		}
+
+		tasksWithDetails = append(tasksWithDetails, enhancedTask)
+	}
+
+	return c.JSON(fiber.Map{"tasks": tasksWithDetails})
 }
 
 func (t *TaskHandler) GetUserTasks(c *fiber.Ctx) error {
@@ -158,7 +189,32 @@ func (t *TaskHandler) GetUserTasks(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to parse assigned tasks"})
 	}
 
-	return c.JSON(fiber.Map{"tasks": tasks})
+	tasksWithDetails := make([]TaskWithUserDetails, 0, len(tasks))
+
+	for _, task := range tasks {
+		enhancedTask := TaskWithUserDetails{
+			Task:              task,
+			AssignedToDetails: []models.User{},
+		}
+
+		if len(task.AssignedTo) > 0 {
+			userIDs := make([]primitive.ObjectID, len(task.AssignedTo))
+			copy(userIDs, task.AssignedTo)
+
+			userCursor, err := t.userCollection.Find(c.Context(), bson.M{"_id": bson.M{"$in": userIDs}})
+			if err == nil {
+				var users []models.User
+				if err := userCursor.All(c.Context(), &users); err == nil {
+					enhancedTask.AssignedToDetails = users
+				}
+				userCursor.Close(c.Context())
+			}
+		}
+
+		tasksWithDetails = append(tasksWithDetails, enhancedTask)
+	}
+
+	return c.JSON(fiber.Map{"tasks": tasksWithDetails})
 }
 
 func (t *TaskHandler) GetTaskByID(c *fiber.Ctx) error {
@@ -178,5 +234,35 @@ func (t *TaskHandler) GetTaskByID(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not fetch task"})
 	}
 
-	return c.JSON(fiber.Map{"task": task})
+	type TaskWithUserDetails struct {
+		models.Task
+		AssignedToDetails []models.User `json:"assigned_to_details"`
+	}
+	enhancedTask := TaskWithUserDetails{
+		Task:              task,
+		AssignedToDetails: []models.User{},
+	}
+
+	if len(task.AssignedTo) > 0 {
+		userIDs := make([]primitive.ObjectID, len(task.AssignedTo))
+		copy(userIDs, task.AssignedTo)
+
+		userCursor, err := t.userCollection.Find(c.Context(), bson.M{"_id": bson.M{"$in": userIDs}})
+		if err == nil {
+			var users []models.User
+			if err := userCursor.All(c.Context(), &users); err == nil {
+
+				for _, user := range users {
+					safeUser := models.User{
+						ID:    user.ID,
+						Name:  user.Name,
+						Email: user.Email,
+					}
+					enhancedTask.AssignedToDetails = append(enhancedTask.AssignedToDetails, safeUser)
+				}
+			}
+		}
+	}
+	return c.JSON(fiber.Map{"task": enhancedTask})
+
 }

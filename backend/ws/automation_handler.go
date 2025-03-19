@@ -13,15 +13,15 @@ import (
 )
 
 const (
-	MessageTypeChat       = "chat"
-	MessageTypeAIRequest  = "ai_request"
-	MessageTypeAIResponse = "ai_response"
+	MessageTypeChat        = "chat"
+	MessageTypeAIRequest   = "ai_request"
+	MessageTypeAIResponse  = "ai_response"
 	MessageTypeTaskCreated = "task_created"
-	MessageTypeError      = "error"
+	MessageTypeError       = "error"
 )
 
 type AIConversationRequest struct {
-    Message string `json:"message"`
+	Message string `json:"message"`
 }
 
 type AIConversationResponse struct {
@@ -40,7 +40,7 @@ var (
 
 func AutomationWebSocketHandler(c *websocket.Conn, ctx context.Context, messageObj WebSocketMessage, userID primitive.ObjectID) {
 	userIDStr := userID.Hex()
-	
+
 	switch messageObj.Type {
 	case MessageTypeAIRequest:
 		// Check if a conversation is already in progress for this user
@@ -50,11 +50,11 @@ func AutomationWebSocketHandler(c *websocket.Conn, ctx context.Context, messageO
 			sendErrorMessage(c, "You already have an active conversation. Please wait for a response.")
 			return
 		}
-		
+
 		// Mark this user as having an active conversation
 		activeConversations[userIDStr] = true
 		conversationMutex.Unlock()
-		
+
 		// Process the request in a separate goroutine
 		go func() {
 			defer func() {
@@ -63,14 +63,14 @@ func AutomationWebSocketHandler(c *websocket.Conn, ctx context.Context, messageO
 				delete(activeConversations, userIDStr)
 				conversationMutex.Unlock()
 			}()
-			
+
 			handleAIRequest(c, ctx, messageObj.Payload, userID)
 		}()
-		
+
 	case MessageTypeChat:
 		// Handle regular chat messages if needed
 		log.Printf("Chat message from user %s: %v", userIDStr, messageObj.Payload)
-		
+
 	default:
 		sendErrorMessage(c, "Unknown message type")
 	}
@@ -85,26 +85,26 @@ func handleAIRequest(c *websocket.Conn, ctx context.Context, payload interface{}
 		sendErrorMessage(c, "Invalid request format")
 		return
 	}
-	
+
 	var request AIConversationRequest
 	if err := json.Unmarshal(payloadBytes, &request); err != nil {
 		sendErrorMessage(c, "Invalid request format")
 		return
 	}
-	
+
 	// Log the user's request to help with debugging
 	log.Printf("Processing AI request from user %s", userIDStr)
-	
+
 	// Process the AI conversation, passing the userID as a string to identify the session
 	result, err := genai.ProcessConversation(ctx, request.Message, userIDStr)
 	if err != nil {
 		sendErrorMessage(c, fmt.Sprintf("AI processing error: %v", err))
 		return
 	}
-	
+
 	// Log the AI response for debugging
 	log.Printf("AI response to user %s: %s", userIDStr, result)
-	
+
 	// Send AI response
 	sendMessage(c, WebSocketMessage{
 		Type: MessageTypeAIResponse,
@@ -121,7 +121,7 @@ func SendMessage(c *websocket.Conn, msg WebSocketMessage) {
 		log.Printf("Error marshalling message: %v", err)
 		return
 	}
-	
+
 	if err := c.WriteMessage(websocket.TextMessage, data); err != nil {
 		log.Printf("Error sending message: %v", err)
 	}

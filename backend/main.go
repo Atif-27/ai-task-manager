@@ -17,7 +17,7 @@ import (
 func main() {
 	_ = godotenv.Load()
 	database.ConnectDB()
-	
+
 	var (
 		app = fiber.New()
 		//Handlers
@@ -30,8 +30,6 @@ func main() {
 		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
 		AllowCredentials: true,
 	}))
-	
-
 
 	apiV1 := app.Group("/api/v1")
 	apiV1.Post("/register", userHandler.Register)
@@ -49,4 +47,3 @@ func main() {
 	port := os.Getenv("PORT")
 	log.Fatal(app.Listen(":" + port))
 }
-

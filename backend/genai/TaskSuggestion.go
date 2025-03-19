@@ -12,9 +12,9 @@ import (
 )
 
 type AITaskSuggestion struct {
-	Title       string `json:"title"`
+	Title       string   `json:"title"`
 	Description []string `json:"description"`
-	Priority    string `json:"priority"`
+	Priority    string   `json:"priority"`
 }
 
 func GetAISuggestion(taskTitle string) (AITaskSuggestion, error) {
@@ -75,7 +75,7 @@ func GetAISuggestion(taskTitle string) (AITaskSuggestion, error) {
 	}
 
 	// Ensure the parsed JSON has valid fields
-	if aiSuggestion.Title == "" || len(aiSuggestion.Description)==0 || aiSuggestion.Priority == "" {
+	if aiSuggestion.Title == "" || len(aiSuggestion.Description) == 0 || aiSuggestion.Priority == "" {
 		return AITaskSuggestion{}, fmt.Errorf("invalid AI response: missing required fields")
 	}
 	fmt.Println(aiSuggestion)

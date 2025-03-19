@@ -10,10 +10,12 @@ import (
 	utils "github.com/Atif-27/ai-task-manager/utilits"
 	"github.com/gofiber/websocket/v2"
 )
+
 type WebSocketMessage struct {
 	Type    string      `json:"type"`
 	Payload interface{} `json:"payload"`
 }
+
 func HandleWebSocketConnection(c *websocket.Conn) {
 	fmt.Println("Connection")
 	authHeader := c.Headers("Authorization")
@@ -21,7 +23,7 @@ func HandleWebSocketConnection(c *websocket.Conn) {
 	if authHeader != "" {
 		tokenStr = strings.TrimPrefix(authHeader, "Bearer ")
 	}
-	if tokenStr ==""{
+	if tokenStr == "" {
 		tokenStr = c.Query("token")
 	}
 	userID, err := utils.ExtractUserID(tokenStr)
@@ -37,7 +39,7 @@ func HandleWebSocketConnection(c *websocket.Conn) {
 		c.Close()
 	}()
 	var (
-		msg []byte
+		msg        []byte
 		messageObj WebSocketMessage
 	)
 	ctx := context.Background()
@@ -52,10 +54,9 @@ func HandleWebSocketConnection(c *websocket.Conn) {
 			sendErrorMessage(c, "Invalid message format")
 			continue
 		}
-		AutomationWebSocketHandler(c,ctx,messageObj,userID)
+		AutomationWebSocketHandler(c, ctx, messageObj, userID)
 	}
 }
-
 
 // sendMessage sends a WebSocketMessage to the client
 func sendMessage(c *websocket.Conn, msg WebSocketMessage) {
@@ -64,7 +65,7 @@ func sendMessage(c *websocket.Conn, msg WebSocketMessage) {
 		log.Printf("Error marshalling message: %v", err)
 		return
 	}
-	
+
 	if err := c.WriteMessage(websocket.TextMessage, data); err != nil {
 		log.Printf("Error sending message: %v", err)
 	}
