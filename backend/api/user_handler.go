@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -56,4 +57,27 @@ func (u *UserHandler) Login(c *fiber.Ctx) error {
 	// TODO: Implement cookie based
 	token, _ := utils.GenerateToken(user.ID.Hex(), user.Email)
 	return c.JSON(fiber.Map{"token": token,"userId": user.ID})
+}
+
+func (u *UserHandler) GetAllUsers(c *fiber.Ctx) error {
+
+	opts := options.Find().SetProjection(bson.M{"password": 0})
+	cursor, err := u.userCollection.Find(c.Context(), bson.M{}, opts)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch users",
+		})
+	}
+	var users []models.User
+	if err := cursor.All(c.Context(), &users); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to decode users",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"status": "success",
+		"count":  len(users),
+		"users":  users,
+	})
 }

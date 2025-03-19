@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/Atif-27/ai-task-manager/database"
+	"github.com/Atif-27/ai-task-manager/models"
 	"github.com/google/generative-ai-go/genai"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/api/option"
 )
 
@@ -204,7 +208,7 @@ func ProcessConversation(ctx context.Context, userMessage string, userID string)
 				priority, _ := funcall.Args["priority"].(string)
 
 				// Create the task
-				task, err := CreateTask(title, description, priority)
+				task, err := CreateTask(title, description, priority,userID)
 				if err != nil {
 					return aiResponse, fmt.Errorf("failed to create task: %v", err)
 				}
@@ -214,7 +218,7 @@ func ProcessConversation(ctx context.Context, userMessage string, userID string)
 					Name: funcall.Name,
 					Response: map[string]any{
 						"success": true,
-						"taskId":  task.ID,
+						"taskId":   task.ID.Hex(),
 						"message": "Task created successfully",
 					},
 				})
@@ -254,21 +258,39 @@ type Task struct {
 	CreatedAt   time.Time
 }
 
-// CreateTask creates a new task with the given details
-func CreateTask(title, description, priority string) (*Task, error) {
-	// Generate a simple ID based on timestamp
-	id := fmt.Sprintf("task_%d", time.Now().Unix())
-	
-	task := &Task{
-		ID:          id,
-		Title:       title,
-		Description: description,
-		Priority:    priority,
-		CreatedAt:   time.Now(),
+// CreateTask creates a new task from conversation extracted details
+func CreateTask(title string, description string, priority string, userID string) (*models.Task, error) {
+    ctx := context.Background()
+	taskCollection := database.GetCollection("task")
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user ID: %v", err)
+	}
+	var taskPriority models.PriorityType
+	switch strings.ToLower(priority) {
+	case "high":
+		taskPriority = models.HIGH
+	case "medium":
+		taskPriority = models.MEDIUM
+	default:
+		taskPriority = models.LOW
 	}
 	
-	// Log task creation (in a real app, you might store this in memory or a file)
-	fmt.Printf("Created task: %+v\n", task)
-	
-	return task, nil
+	// Create new task
+	task := models.Task{
+		Title:       title,
+		Description: description,
+		Priority:    taskPriority,
+		Status:      models.PENDING,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+		AssignedBy:  userObjID,
+		AssignedTo:  []primitive.ObjectID{},
+		ID:          primitive.NewObjectID(),
+	}
+	_, err = taskCollection.InsertOne(ctx, task)
+	if err != nil {
+		return nil , fmt.Errorf("failed to create task: %v", err)
+	}
+    return &task, nil
 }

@@ -36,6 +36,8 @@ func main() {
 	apiV1 := app.Group("/api/v1")
 	apiV1.Post("/register", userHandler.Register)
 	apiV1.Post("/login", userHandler.Login)
+	apiV1.Get("/users", userHandler.GetAllUsers)
+
 	apiV1.Post("/tasks", middleware.AuthMiddleware, taskHandler.CreateTask)
 	apiV1.Delete("/tasks/:id", middleware.AuthMiddleware, taskHandler.DeleteTask)
 	apiV1.Put("/tasks/:id", middleware.AuthMiddleware, taskHandler.UpdateTask)
