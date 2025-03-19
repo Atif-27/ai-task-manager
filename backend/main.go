@@ -24,8 +24,9 @@ func main() {
 		userHandler = api.MakeUserHandler()
 		taskHandler = api.MakeTaskHandler()
 	)
+	origin:= os.Getenv("ORIGIN_URL")
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:3000",
+		AllowOrigins:     origin,
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
 		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
 		AllowCredentials: true,
