@@ -160,3 +160,23 @@ func (t *TaskHandler) GetUserTasks(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"tasks": tasks})
 }
+
+func (t *TaskHandler) GetTaskByID(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid Task ID"})
+	}
+
+	var task models.Task
+	err = t.taskCollection.FindOne(c.Context(), bson.M{"_id": objID}).Decode(&task)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Task not found"})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not fetch task"})
+	}
+
+	return c.JSON(fiber.Map{"task": task})
+}

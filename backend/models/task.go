@@ -15,8 +15,8 @@ type Task struct {
 	AssignedBy  primitive.ObjectID   `bson:"assigned_by" json:"assigned_by"`
 	Status      StatusType           `bson:"status" json:"status"`
 	Priority    PriorityType         `bson:"priority" json:"priority"`
-	CreatedAt   time.Time            `bson:"created_at,omitempty" json:"created_at"`
-	UpdatedAt   time.Time            `bson:"updated_at,omitempty" json:"updated_at"`
+	CreatedAt   time.Time            `bson:"created_at" json:"created_at"`
+	UpdatedAt   time.Time            `bson:"updated_at" json:"updated_at"`
 	// TODO check if mongodb automatically handle created at and updated at
 }
 
