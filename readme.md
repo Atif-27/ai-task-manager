@@ -4,8 +4,8 @@ AI Task Manager is a task management system with AI-powered task creation and We
 
 ## Features
 ### 📌 **User Management**
-- **Register a new user** → 
-- **User login** → 
+- **Register a new user**
+- **User login** 
 - **Get all users** 
 
 ### 📌 **Task Management**
@@ -30,7 +30,11 @@ git clone https://github.com/Atif-27/ai-task-manager.git
 cd ai-task-manager  
 cd backend  
 go mod tidy  
-go run main.go  
+make run
+
+cd frontend
+npm i
+npm run dev
 ```
 **Rename environment files:**  
 - `mv frontend/env.example frontend/.env`  
@@ -75,17 +79,15 @@ docker-compose up --build
 ## Environment Variables
 
 - PORT - Server port (default: 8080)  
-- DATABASE_URL - PostgreSQL connection string  
+- DATABASE_URL - mongodb connection string  
 - JWT_SECRET - Secret key for JWT authentication  
 
 ## Technologies Used
 
-- **Backend**: Golang (Fiber Framework)  
-- **Database**: PostgreSQL  
+- **Backend**: Golang (Fiber Framework) 
+- **Frontend**:  Next.js
+- **Database**: mongodb  
 - **Authentication**: JWT  
 - **Real-time**: WebSockets  
 - **Containerization**: Docker  
 
-## License
-
-This project is licensed under the MIT License.
